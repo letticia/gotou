@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { buildPages, loadGongyoPresets, loadGongyoUnits } from "./lib/gongyo";
+import { buildPages, loadGongyoPresets, loadGongyoUnits, resolveDisplayRuby } from "./lib/gongyo";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
 
@@ -78,7 +78,10 @@ export default function GongyoMode() {
         </span>
       </div>
       <div className="gongyo-body">
-        {page.ruby && <p className="gongyo-ruby">{page.ruby}</p>}
+        {(() => {
+          const displayRuby = resolveDisplayRuby(page, nav.counterRemaining);
+          return displayRuby && <p className="gongyo-ruby">{displayRuby}</p>;
+        })()}
         <p className="gongyo-text">{page.text}</p>
         {nav.counterRemaining !== null && (
           <p className="gongyo-counter">{nav.counterRemaining}</p>

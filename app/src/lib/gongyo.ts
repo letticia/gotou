@@ -1,6 +1,9 @@
 export interface GongyoUnitBodyItem {
   text: string;
   ruby?: string;
+  /** カウンター残数(gongyoNav.tsのcounterRemaining)ごとの読み上書き。十念9回目の「なむあみだぶつ」等、
+   * 回数によって読みが変わる場合に使う(文字自体は変わらないためtextは対象外)。 */
+  counterRubyOverrides?: Record<number, string>;
 }
 
 export interface GongyoUnit {
@@ -29,6 +32,7 @@ export interface GongyoPage {
   text: string;
   ruby?: string;
   counterTotal?: number;
+  counterRubyOverrides?: Record<number, string>;
 }
 
 const unitModules = import.meta.glob<GongyoUnit>("../shared/gongyo/units/*.json", {
@@ -78,8 +82,21 @@ export function buildPages(
         text: bodyItem.text,
         ruby: bodyItem.ruby,
         counterTotal: item.counter,
+        counterRubyOverrides: bodyItem.counterRubyOverrides,
       });
     });
   }
   return pages;
+}
+
+/** counterRemaining(残数)に応じた読みの上書きがあればそれを、無ければ通常のrubyを返す */
+export function resolveDisplayRuby(
+  page: GongyoPage,
+  counterRemaining: number | null,
+): string | undefined {
+  if (counterRemaining !== null) {
+    const override = page.counterRubyOverrides?.[counterRemaining];
+    if (override !== undefined) return override;
+  }
+  return page.ruby;
 }

@@ -2,7 +2,13 @@
   "id": "junen",
   "title": "十念",
   "reading": "じゅうねん",
-  "body": [{ "text": "南無阿弥陀仏", "ruby": "なむあみだぶ" }],
+  "body": [
+    {
+      "text": "南無阿弥陀仏",
+      "ruby": "なむあみだぶ",
+      "counterRubyOverrides": { "2": "なむあみだぶつ" }
+    }
+  ],
   "source": {
     "name": "浄土宗の基本称名(南無阿弥陀仏)。特定の底本によらない",
     "url": "",
