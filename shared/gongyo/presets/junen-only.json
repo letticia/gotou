@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "id": "junen-only",
+  "name": "十念のみ(骨組み確認用)",
+  "items": [{ "unit": "junen", "counter": 10 }]
+}

@@ -90,3 +90,113 @@ body {
   text-decoration: none;
   cursor: default;
 }
+
+.shell {
+  min-height: 100vh;
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem 0;
+}
+
+.mode-tabs button {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.mode-tabs button.active {
+  background: #2980b9;
+  border-color: #2980b9;
+  color: #fff;
+}
+
+.shell-gongyo {
+  background: #000;
+  min-height: 100vh;
+}
+
+.shell-gongyo .mode-tabs {
+  max-width: none;
+  padding: 0.75rem;
+}
+
+.gongyo {
+  min-height: calc(100vh - 3.5rem);
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gongyo-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.gongyo-back {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.gongyo-position {
+  margin-left: auto;
+}
+
+.gongyo-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.gongyo-ruby {
+  color: #999;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.gongyo-text {
+  font-size: 3rem;
+  font-weight: bold;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.gongyo-counter {
+  font-size: 2.5rem;
+  color: #e0a030;
+  margin: 0;
+}
+
+.gongyo-finished {
+  color: #7fc97f;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.gongyo-error {
+  padding: 2rem;
+  color: #f88;
+}
