@@ -92,7 +92,13 @@ export async function getDictionaryBytes(
     throw new Error("辞書データを取得できません。ネットワークに接続してから開き直してください。");
   }
 
-  const versionedUrl = withVersion(manifest.url, manifest.version);
+  // manifest.url はmanifest自身から見た相対パス(base path非依存にするため)。
+  // manifestUrlを基点に解決してからバージョンクエリを付与する。
+  const resolvedDbUrl = new URL(
+    manifest.url,
+    new URL(manifestUrl, "http://placeholder.invalid"),
+  ).href;
+  const versionedUrl = withVersion(resolvedDbUrl, manifest.version);
 
   const cached = await cache.match(versionedUrl);
   if (cached) {

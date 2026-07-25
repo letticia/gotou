@@ -8,7 +8,7 @@ import { parseInternalLinkTarget } from "./lib/internalLinks";
 
 // 開発時はscripts/build-dummy-db.mjsが生成するダミーDBを指す。
 // 実データ配信サーバーのURLは別途決定する(docs/handoff.md参照)。
-const MANIFEST_URL = "/dictionary-manifest.json";
+const MANIFEST_URL = `${import.meta.env.BASE_URL}dictionary-manifest.json`;
 
 type LoadState =
   | { status: "checking" }

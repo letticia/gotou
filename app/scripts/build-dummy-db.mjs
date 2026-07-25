@@ -46,7 +46,7 @@ const version = createHash("sha256").update(readFileSync(DB_FILE)).digest("hex")
 
 writeFileSync(
   MANIFEST_FILE,
-  JSON.stringify({ version, url: "/dictionary.sqlite3" }, null, 2),
+  JSON.stringify({ version, url: "dictionary.sqlite3" }, null, 2),
 );
 
 console.log(`manifest書き出し完了: ${MANIFEST_FILE} (version=${version})`);

@@ -270,3 +270,12 @@ body {
   padding: 2rem;
   color: #f88;
 }
+
+.prototype-notice {
+  background: #4a3510;
+  color: #f2d9a0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.5rem 1.5rem;
+  text-align: center;
+}
