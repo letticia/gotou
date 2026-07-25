@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
 import { getDictionaryBytes } from "./lib/dictionaryStorage";
+import { formatBytes } from "./lib/formatBytes";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
 
@@ -10,13 +11,14 @@ import { parseInternalLinkTarget } from "./lib/internalLinks";
 const MANIFEST_URL = "/dictionary-manifest.json";
 
 type LoadState =
-  | { status: "loading" }
+  | { status: "checking" }
+  | { status: "downloading"; receivedBytes: number; totalBytes: number }
   | { status: "ready" }
   | { status: "error"; message: string };
 
 export default function SearchMode() {
   const [db, setDb] = useState<DictionaryDb | null>(null);
-  const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
+  const [loadState, setLoadState] = useState<LoadState>({ status: "checking" });
   const [query, setQuery] = useState("");
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
@@ -25,7 +27,11 @@ export default function SearchMode() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { bytes } = await getDictionaryBytes(MANIFEST_URL);
+      const { bytes } = await getDictionaryBytes(MANIFEST_URL, (receivedBytes, totalBytes) => {
+        if (!cancelled) {
+          setLoadState({ status: "downloading", receivedBytes, totalBytes });
+        }
+      });
       const opened = await openDatabaseFromBytes(bytes);
       if (cancelled) {
         opened.close();
@@ -103,8 +109,22 @@ export default function SearchMode() {
         placeholder="読みまたは見出し語で検索"
         className="search-input"
       />
-      {loadState.status === "loading" && (
-        <p className="empty">辞書データをダウンロード(またはキャッシュから読み込み)中…</p>
+      {loadState.status === "checking" && <p className="empty">辞書データを確認中…</p>}
+      {loadState.status === "downloading" && (
+        <div className="download-progress">
+          <progress
+            className="download-progress-bar"
+            value={loadState.totalBytes > 0 ? loadState.receivedBytes : undefined}
+            max={loadState.totalBytes > 0 ? loadState.totalBytes : undefined}
+          />
+          <p className="empty">
+            辞書データをダウンロード中… {formatBytes(loadState.receivedBytes)}
+            {loadState.totalBytes > 0 &&
+              ` / ${formatBytes(loadState.totalBytes)} (${Math.round(
+                (loadState.receivedBytes / loadState.totalBytes) * 100,
+              )}%)`}
+          </p>
+        </div>
       )}
       {loadState.status === "error" && <p className="empty error">{loadState.message}</p>}
       <ul className="result-list">
