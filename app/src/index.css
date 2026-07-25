@@ -64,9 +64,65 @@ body {
   border-top: 2px solid #333;
 }
 
-.body-paragraph {
-  white-space: pre-line;
+.body-html {
   line-height: 1.7;
+}
+
+.body-html p {
+  margin: 0 0 0.8em;
+}
+
+.body-html hr.section-divider {
+  border: 0;
+  border-top: 1px dashed #555;
+  margin: 1em 0;
+}
+
+.body-html h2.dict-section-heading,
+.body-html h3.dict-section-heading {
+  color: #e0a030;
+  margin: 1em 0 0.4em;
+}
+
+.body-html .external-link {
+  color: #27ae60;
+}
+
+.body-html table.wikitable {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.body-html table.wikitable th,
+.body-html table.wikitable td {
+  border: 1px solid #555;
+  padding: 0.3em 0.6em;
+  text-align: left;
+}
+
+.body-html .dict-image-container {
+  margin: 1em 0;
+  padding: 0.6em;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.body-html .dict-image {
+  max-width: 100%;
+}
+
+.body-html .dict-image-caption {
+  color: #999;
+  font-size: 0.85em;
+  margin-top: 0.4em;
+}
+
+.body-html rt {
+  color: #999;
 }
 
 .back-button {

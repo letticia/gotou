@@ -1,54 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { loadDummyEntries, buildTitleIdMap } from "./lib/dummyEntries";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
 import { getDictionaryBytes } from "./lib/dictionaryStorage";
 import { normalizeSearchInput } from "./lib/variants";
-import { parseBody } from "./lib/renderBody";
-import type { Segment } from "./lib/renderBody";
+import { parseInternalLinkTarget } from "./lib/internalLinks";
 
-// 開発時はscripts/build-dummy-db.mtsが生成するダミーDBを指す。
+// 開発時はscripts/build-dummy-db.mjsが生成するダミーDBを指す。
 // 実データ配信サーバーのURLは別途決定する(docs/handoff.md参照)。
 const MANIFEST_URL = "/dictionary-manifest.json";
-
-// リンクジャンプ描画用(parseBodyのタイトル解決)。DB本体とは独立に、
-// 既存のダミーfixtureから直接構築する(理由はdocs/handoff.md参照)。
-const entries = loadDummyEntries();
-const titleToId = buildTitleIdMap(entries);
 
 type LoadState =
   | { status: "loading" }
   | { status: "ready" }
   | { status: "error"; message: string };
-
-function SegmentView({ segment, onJump }: { segment: Segment; onJump: (id: number) => void }) {
-  switch (segment.kind) {
-    case "bold":
-      return <strong>{segment.text}</strong>;
-    case "italic":
-      return <em>{segment.text}</em>;
-    case "link":
-      if (segment.targetId !== null) {
-        return (
-          <button
-            type="button"
-            className="internal-link"
-            onClick={() => onJump(segment.targetId!)}
-          >
-            {segment.label}
-          </button>
-        );
-      }
-      return (
-        <span className="internal-link broken" title="リンク先が見つかりません">
-          {segment.label}
-        </span>
-      );
-    case "text":
-    default:
-      return <>{segment.text}</>;
-  }
-}
 
 export default function SearchMode() {
   const [db, setDb] = useState<DictionaryDb | null>(null);
@@ -56,6 +20,7 @@ export default function SearchMode() {
   const [query, setQuery] = useState("");
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +71,28 @@ export default function SearchMode() {
     setCurrentId(history[history.length - 1]);
   }
 
+  function handleBodyClick(event: React.MouseEvent<HTMLDivElement>) {
+    const link = (event.target as HTMLElement).closest("a.internal-link");
+    if (!link) return;
+    event.preventDefault();
+    const href = link.getAttribute("href");
+    const targetId = href ? parseInternalLinkTarget(href) : null;
+    if (targetId !== null) {
+      navigateTo(targetId);
+    }
+  }
+
+  // factory生成の本物のHTMLにはリンク切れの見た目が付いていないため、描画後に走査して付与する
+  useEffect(() => {
+    const container = bodyRef.current;
+    if (!container) return;
+    for (const anchor of container.querySelectorAll<HTMLAnchorElement>("a.internal-link")) {
+      const href = anchor.getAttribute("href");
+      const resolved = href ? parseInternalLinkTarget(href) : null;
+      anchor.classList.toggle("broken", resolved === null);
+    }
+  }, [current?.id]);
+
   return (
     <div className="app">
       <input
@@ -142,13 +129,16 @@ export default function SearchMode() {
           )}
           <h2>{current.title}</h2>
           <p className="reading">{current.reading}</p>
-          {parseBody(current.bodyHtml, titleToId).map((paragraph, i) => (
-            <p key={i} className="body-paragraph">
-              {paragraph.map((segment, j) => (
-                <SegmentView key={j} segment={segment} onJump={navigateTo} />
-              ))}
-            </p>
-          ))}
+          {/*
+            factoryの変換パイプライン(自分たちのコード)が生成した既知構造のHTML。
+            外部・ユーザー入力ではないためdangerouslySetInnerHTMLで許容する。
+          */}
+          <div
+            ref={bodyRef}
+            className="body-html"
+            onClick={handleBodyClick}
+            dangerouslySetInnerHTML={{ __html: current.bodyHtml }}
+          />
         </div>
       )}
     </div>

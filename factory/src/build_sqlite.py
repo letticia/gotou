@@ -9,6 +9,7 @@ import re
 import json
 import html
 import sqlite3
+import argparse
 import unicodedata
 
 from wikitext import extract_yomi_and_clean_headword, clean_wikitext, build_title_id_map
@@ -17,6 +18,7 @@ FACTORY_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO_DIR = os.path.dirname(FACTORY_DIR)
 CACHE_DIR = os.path.join(FACTORY_DIR, "cache")
 OUTPUT_DIR = os.path.join(FACTORY_DIR, "output")
+FIXTURES_FILE = os.path.join(FACTORY_DIR, "tests", "fixtures", "articles.json")
 
 DATA_FILE = os.path.join(CACHE_DIR, "articles.json")
 SCHEMA_FILE = os.path.join(REPO_DIR, "shared", "schema.sql")
@@ -164,22 +166,40 @@ def generate_database(articles, db_path, pending_readings_path=None, broken_link
         "title_to_id_map_size": len(title_to_id_map),
     }
 
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--source", choices=["cache", "fixtures"], default="cache",
+        help="cache: factory/cache/articles.json (実データ、既定値) / "
+             "fixtures: factory/tests/fixtures/articles.json (自作ダミー)",
+    )
+    parser.add_argument(
+        "--output", default=None,
+        help=f"出力するSQLiteファイルのパス (既定値: {DB_FILE})",
+    )
+    return parser.parse_args()
+
 def main():
+    args = parse_args()
+    data_file = FIXTURES_FILE if args.source == "fixtures" else DATA_FILE
+    db_file = args.output or DB_FILE
+
+    os.makedirs(os.path.dirname(db_file) or ".", exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    print(f"記事データの読み込み: {DATA_FILE}")
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
+    print(f"記事データの読み込み: {data_file}")
+    with open(data_file, "r", encoding="utf-8") as f:
         articles = json.load(f)
     print(f"総記事数: {len(articles)} 件")
 
     stats = generate_database(
-        articles, DB_FILE,
+        articles, db_file,
         pending_readings_path=PENDING_READINGS_FILE,
         broken_links_path=BROKEN_LINKS_FILE,
     )
 
     print(f"タイトルIDマップ登録数: {stats['title_to_id_map_size']} 件")
-    print(f"=== 完了: {DB_FILE} ===")
+    print(f"=== 完了: {db_file} ===")
     print(f"entries: {stats['entries_count']} 件")
     print(f"reading欠落 (保留リスト): {stats['missing_reading_count']} 件 -> {PENDING_READINGS_FILE}")
     print(f"links: {stats['links_count']} 件")

@@ -17,9 +17,8 @@ node_modules/
 app/dist/
 app/.vite/
 
-# app: sync-shared.mjsによるコピー(唯一の正はshared/とfactory/tests/fixtures/)
+# app: sync-shared.mjsによるコピー(唯一の正はshared/)
 app/src/shared/
-app/src/fixtures/
 
 # app: build-dummy-db.mjsによる生成物(ダミーデータ由来のSQLite。実データは絶対にコミットしない)
 app/public/dictionary.sqlite3
