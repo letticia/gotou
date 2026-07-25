@@ -3,8 +3,9 @@ import { buildPages, loadGongyoPresets, loadGongyoUnits } from "./lib/gongyo";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
 
-// 骨組みのため、プリセットは固定で1つだけ表示する(ホーム画面からの選択UIはスコープ外)。
-const PRESET_ID = "junen-only";
+// プリセット選択UIは未実装のため、既定の差定を固定で1つだけ表示する(選択UIはスコープ外)。
+// 三奉請・三身礼版を既定とする(開発者確認済み)。
+const PRESET_ID = "nichijo-gongyo-sanbujo";
 
 // Screen Wake Lock API: 対応ブラウザでのみ有効。取得に失敗しても機能に支障はないため無視する。
 // 回転ロックはFullscreen API依存で環境により不安定なため今回はスコープ外。
