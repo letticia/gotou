@@ -1,0 +1,16 @@
+{
+  "id": "sogange",
+  "title": "総願偈",
+  "reading": "そうがんげ",
+  "body": [
+    { "text": "衆生無辺誓願度", "ruby": "しゅじょうむへんせいがんど" },
+    { "text": "煩悩無辺誓願断", "ruby": "ぼんのうむへんせいがんだん" },
+    { "text": "法門無尽誓願知", "ruby": "ほうもんむじんせいがんち" },
+    { "text": "無上菩提誓願証", "ruby": "むじょうぼだいせいがんしょう" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

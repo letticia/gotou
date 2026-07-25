@@ -1,0 +1,16 @@
+{
+  "id": "sangege",
+  "title": "懺悔偈",
+  "reading": "さんげげ",
+  "body": [
+    { "text": "我昔所造諸悪業", "ruby": "がしゃくしょぞうしょあくごう" },
+    { "text": "皆由無始貪瞋痴", "ruby": "かいゆむしとんじんち" },
+    { "text": "従身語意之所生", "ruby": "じゅうしんごいししょしょう" },
+    { "text": "一切我今皆懺悔", "ruby": "いっさいがこんかいさんげ" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "so-ekoge",
+  "title": "総回向偈",
+  "reading": "そうえこうげ",
+  "body": [
+    { "text": "願以此功徳", "ruby": "がんにしくどく" },
+    { "text": "平等施一切", "ruby": "びょうどうせいっさい" },
+    { "text": "同発菩提心", "ruby": "どうほつぼだいしん" },
+    { "text": "往生安楽国", "ruby": "おうじょうあんらっこく" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

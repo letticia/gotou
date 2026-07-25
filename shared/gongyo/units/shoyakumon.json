@@ -1,0 +1,14 @@
+{
+  "id": "shoyakumon",
+  "title": "摂益文",
+  "reading": "しょうやくもん",
+  "body": [
+    { "text": "光明徧照十方世界", "ruby": "こうみょうへんじょうじっぽうせかい" },
+    { "text": "念仏衆生摂取不捨", "ruby": "ねんぶつしゅじょうせっしゅふしゃ" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

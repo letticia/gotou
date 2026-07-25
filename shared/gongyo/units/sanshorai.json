@@ -1,0 +1,11 @@
+{
+  "id": "sanshorai",
+  "title": "三唱礼",
+  "reading": "さんしょうらい",
+  "body": [{ "text": "南無阿弥陀仏", "ruby": "なむあみだぶ" }],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な称名、特定の底本によらない)。九称。三身礼と二者択一",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "nichijo-gongyo-sanbujo",
+  "name": "日常勤行式(三奉請・三身礼版)",
+  "items": [
+    { "unit": "koge" },
+    { "unit": "sanborai" },
+    { "unit": "sanbujo" },
+    { "unit": "sangege" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "kaikyoge" },
+    { "unit": "shiseige" },
+    { "unit": "honzeige" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "ichimai-kishomon" },
+    { "unit": "shoyakumon" },
+    { "unit": "nenbutsu-ichie" },
+    { "unit": "so-ekoge" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "sogange" },
+    { "unit": "sanjinrai" },
+    { "unit": "sobutsuge" },
+    { "unit": "junen", "counter": 10 }
+  ]
+}

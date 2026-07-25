@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "nichijo-gongyo-shibujo",
+  "name": "日常勤行式(四奉請・三唱礼版)",
+  "items": [
+    { "unit": "koge" },
+    { "unit": "sanborai" },
+    { "unit": "shibujo" },
+    { "unit": "sangege" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "kaikyoge" },
+    { "unit": "shiseige" },
+    { "unit": "honzeige" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "ichimai-kishomon" },
+    { "unit": "shoyakumon" },
+    { "unit": "nenbutsu-ichie" },
+    { "unit": "so-ekoge" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "sogange" },
+    { "unit": "sanshorai", "counter": 9 },
+    { "unit": "sobutsuge" },
+    { "unit": "junen", "counter": 10 }
+  ]
+}

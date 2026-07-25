@@ -1,0 +1,16 @@
+{
+  "id": "honzeige",
+  "title": "本誓偈",
+  "reading": "ほんぜいげ",
+  "body": [
+    { "text": "弥陀本誓願", "ruby": "みだほんぜいがん" },
+    { "text": "極楽之要門", "ruby": "ごくらくしようもん" },
+    { "text": "定散等回向", "ruby": "じょうさんとうえこう" },
+    { "text": "速証無生身", "ruby": "そくしょうむしょうしん" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

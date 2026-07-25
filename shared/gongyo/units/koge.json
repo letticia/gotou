@@ -1,0 +1,16 @@
+{
+  "id": "koge",
+  "title": "香偈",
+  "reading": "こうげ",
+  "body": [
+    { "text": "願我身浄如香炉", "ruby": "がんがしんじょうにょこうろ" },
+    { "text": "願我心如智慧火", "ruby": "がんがしんにょちえか" },
+    { "text": "念念焚焼戒定香", "ruby": "ねんねんぼんじょうかいじょうこう" },
+    { "text": "供養十方三世仏", "ruby": "くようじっぽうさんぜぶつ" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

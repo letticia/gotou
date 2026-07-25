@@ -1,0 +1,16 @@
+{
+  "id": "sobutsuge",
+  "title": "送仏偈",
+  "reading": "そうぶつげ",
+  "body": [
+    { "text": "請仏随縁還本国", "ruby": "しょうぶつずいえんげんぽんごく" },
+    { "text": "普散香華心送仏", "ruby": "ふさんこうげしんそうぶつ" },
+    { "text": "願仏慈心遙護念", "ruby": "がんぶつじしんようごねん" },
+    { "text": "同生相勧尽須来", "ruby": "どうしょうそうかんじんしゅらい" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}

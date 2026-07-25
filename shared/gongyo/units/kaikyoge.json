@@ -1,0 +1,16 @@
+{
+  "id": "kaikyoge",
+  "title": "開経偈",
+  "reading": "かいきょうげ",
+  "body": [
+    { "text": "無上甚深微妙法", "ruby": "むじょうじんじんみみょうほう" },
+    { "text": "百千万劫難遭遇", "ruby": "ひゃくせんまんごうなんそうぐう" },
+    { "text": "我今見聞得受持", "ruby": "がこんけんもんとくじゅじ" },
+    { "text": "願解如来真実義", "ruby": "がんげにょらいしんじつぎ" }
+  ],
+  "source": {
+    "name": "浄土宗日常勤行式(伝統的な経文、特定の底本によらない)",
+    "url": "https://jodo.or.jp/learn-more/dairy-working/",
+    "license": "PD"
+  }
+}
