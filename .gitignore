@@ -17,6 +17,10 @@ node_modules/
 app/dist/
 app/.vite/
 
+# app: sync-shared.mjsによるコピー(唯一の正はshared/とfactory/tests/fixtures/)
+app/src/shared/
+app/src/fixtures/
+
 # OS
 .DS_Store
 
