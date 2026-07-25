@@ -70,23 +70,17 @@ def target_id_from_entry_id(entry_id_str):
     """wikitext.clean_wikitextのlink_sinkが渡す 'entry_{pageid}' からpageid(int)を取り出す"""
     return int(entry_id_str.split("_", 1)[1])
 
-def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    if os.path.exists(DB_FILE):
-        os.remove(DB_FILE)
-
+def generate_database(articles, db_path, pending_readings_path=None, broken_links_path=None):
+    """articlesリストからshared/schema.sql準拠のSQLiteをdb_pathに生成し、統計情報のdictを返す"""
     variants_map = load_variants_map()
     normalize_search_key = make_search_key_normalizer(variants_map)
 
-    print(f"記事データの読み込み: {DATA_FILE}")
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        articles = json.load(f)
-    print(f"総記事数: {len(articles)} 件")
-
     title_to_id_map = build_title_id_map(articles)
-    print(f"タイトルIDマップ登録数: {len(title_to_id_map)} 件")
 
-    conn = sqlite3.connect(DB_FILE)
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    conn = sqlite3.connect(db_path)
     create_schema(conn)
     cur = conn.cursor()
 
@@ -155,16 +149,41 @@ def main():
     conn.commit()
     conn.close()
 
-    with open(PENDING_READINGS_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(pending_readings) + ("\n" if pending_readings else ""))
-    with open(BROKEN_LINKS_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(broken_links) + ("\n" if broken_links else ""))
+    if pending_readings_path:
+        with open(pending_readings_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(pending_readings) + ("\n" if pending_readings else ""))
+    if broken_links_path:
+        with open(broken_links_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(broken_links) + ("\n" if broken_links else ""))
 
+    return {
+        "entries_count": entries_count,
+        "missing_reading_count": missing_reading_count,
+        "links_count": len(all_links),
+        "broken_links_count": len(broken_links),
+        "title_to_id_map_size": len(title_to_id_map),
+    }
+
+def main():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    print(f"記事データの読み込み: {DATA_FILE}")
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        articles = json.load(f)
+    print(f"総記事数: {len(articles)} 件")
+
+    stats = generate_database(
+        articles, DB_FILE,
+        pending_readings_path=PENDING_READINGS_FILE,
+        broken_links_path=BROKEN_LINKS_FILE,
+    )
+
+    print(f"タイトルIDマップ登録数: {stats['title_to_id_map_size']} 件")
     print(f"=== 完了: {DB_FILE} ===")
-    print(f"entries: {entries_count} 件")
-    print(f"reading欠落 (保留リスト): {missing_reading_count} 件 -> {PENDING_READINGS_FILE}")
-    print(f"links: {len(all_links)} 件")
-    print(f"リンク切れ: {len(broken_links)} 件 -> {BROKEN_LINKS_FILE}")
+    print(f"entries: {stats['entries_count']} 件")
+    print(f"reading欠落 (保留リスト): {stats['missing_reading_count']} 件 -> {PENDING_READINGS_FILE}")
+    print(f"links: {stats['links_count']} 件")
+    print(f"リンク切れ: {stats['broken_links_count']} 件 -> {BROKEN_LINKS_FILE}")
 
 if __name__ == "__main__":
     main()

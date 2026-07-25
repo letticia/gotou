@@ -50,26 +50,23 @@ INSTALL_DIR = os.path.expanduser("~/Library/Dictionaries")
 DICT_TITLE = "浄土宗大辞典"
 DICT_ID = "jp.jodoshuzensho.daijiten"
 
-def prepare_other_resources():
-    """全249枚の画像を BUILD_DIR/OtherResources に同期"""
-    os.makedirs(OTHER_RESOURCES_DIR, exist_ok=True)
-    if os.path.exists(IMAGE_DIR):
-        print(f"画像リソースをコピー中: {IMAGE_DIR} -> {OTHER_RESOURCES_DIR}")
-        for img_name in os.listdir(IMAGE_DIR):
-            src = os.path.join(IMAGE_DIR, img_name)
-            dst = os.path.join(OTHER_RESOURCES_DIR, img_name)
+def prepare_other_resources(image_dir, other_resources_dir):
+    """画像をOtherResourcesディレクトリに同期"""
+    os.makedirs(other_resources_dir, exist_ok=True)
+    if os.path.exists(image_dir):
+        print(f"画像リソースをコピー中: {image_dir} -> {other_resources_dir}")
+        for img_name in os.listdir(image_dir):
+            src = os.path.join(image_dir, img_name)
+            dst = os.path.join(other_resources_dir, img_name)
             if os.path.isfile(src):
                 shutil.copy2(src, dst)
-        print(f"リソースコピー完了: {len(os.listdir(OTHER_RESOURCES_DIR))} 件")
+        print(f"リソースコピー完了: {len(os.listdir(other_resources_dir))} 件")
 
-def generate_xml_and_files():
-    """XML, Info.plist, CSS を作成"""
-    os.makedirs(BUILD_DIR, exist_ok=True)
-    prepare_other_resources()
-
-    print(f"記事データの読み込み: {DATA_FILE}")
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        articles = json.load(f)
+def generate_xml_and_files(articles, build_dir, image_dir):
+    """articlesリストから XML, Info.plist, CSS を build_dir に作成する"""
+    other_resources_dir = os.path.join(build_dir, "OtherResources")
+    os.makedirs(build_dir, exist_ok=True)
+    prepare_other_resources(image_dir, other_resources_dir)
 
     print(f"総記事数: {len(articles)} 件")
 
@@ -123,7 +120,7 @@ def generate_xml_and_files():
 {chr(10).join(xml_entries)}
 </d:dictionary>'''
 
-    xml_path = os.path.join(BUILD_DIR, "JodoDaijiten.xml")
+    xml_path = os.path.join(build_dir, "JodoDaijiten.xml")
     with open(xml_path, "w", encoding="utf-8") as f:
         f.write(xml_content)
     print(f"XML生成完了: {xml_path} (サイズ: {len(xml_content)/1024/1024:.2f} MB)")
@@ -273,7 +270,7 @@ li {
     margin-bottom: 4px;
 }
 '''
-    css_path = os.path.join(BUILD_DIR, "JodoDaijiten.css")
+    css_path = os.path.join(build_dir, "JodoDaijiten.css")
     with open(css_path, "w", encoding="utf-8") as f:
         f.write(css_content)
 
@@ -295,7 +292,7 @@ li {
 	<string>1.0</string>
 </dict>
 </plist>'''
-    plist_path = os.path.join(BUILD_DIR, "Info.plist")
+    plist_path = os.path.join(build_dir, "Info.plist")
     with open(plist_path, "w", encoding="utf-8") as f:
         f.write(plist_content)
 
@@ -342,7 +339,11 @@ def compile_dictionary(xml_path, css_path, plist_path):
         return None
 
 def main():
-    xml_path, css_path, plist_path = generate_xml_and_files()
+    print(f"記事データの読み込み: {DATA_FILE}")
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        articles = json.load(f)
+
+    xml_path, css_path, plist_path = generate_xml_and_files(articles, BUILD_DIR, IMAGE_DIR)
     built_path = compile_dictionary(xml_path, css_path, plist_path)
 
 if __name__ == "__main__":
