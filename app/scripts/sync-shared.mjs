@@ -29,6 +29,10 @@ const fileCopies = [
     join(APP_DIR, "src", "shared", "variants.json"),
   ],
   [
+    join(REPO_DIR, "shared", "schema.sql"),
+    join(APP_DIR, "src", "shared", "schema.sql"),
+  ],
+  [
     join(REPO_DIR, "factory", "tests", "fixtures", "articles.json"),
     join(APP_DIR, "src", "fixtures", "articles.json"),
   ],

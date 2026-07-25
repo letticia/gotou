@@ -1,10 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadDummyEntries, buildTitleIdMap } from "./lib/dummyEntries";
-import { searchEntries } from "./lib/search";
+import { openDummyDatabase } from "./lib/db";
+import type { DictionaryDb } from "./lib/db";
+import { normalizeSearchInput } from "./lib/variants";
 import { parseBody } from "./lib/renderBody";
 import type { Segment } from "./lib/renderBody";
 
+// リンクジャンプ描画用(parseBodyのタイトル解決)。DB本体とは独立に、
+// 既存のダミーfixtureから直接構築する(理由はdocs/handoff.md参照)。
 const entries = loadDummyEntries();
+const titleToId = buildTitleIdMap(entries);
 
 function SegmentView({ segment, onJump }: { segment: Segment; onJump: (id: number) => void }) {
   switch (segment.kind) {
@@ -36,15 +41,35 @@ function SegmentView({ segment, onJump }: { segment: Segment; onJump: (id: numbe
 }
 
 export default function SearchMode() {
+  const [db, setDb] = useState<DictionaryDb | null>(null);
   const [query, setQuery] = useState("");
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
 
-  const entriesById = useMemo(() => new Map(entries.map((e) => [e.id, e])), []);
-  const titleToId = useMemo(() => buildTitleIdMap(entries), []);
+  useEffect(() => {
+    let cancelled = false;
+    openDummyDatabase().then((opened) => {
+      if (cancelled) {
+        opened.close();
+      } else {
+        setDb(opened);
+      }
+    });
+    return () => {
+      cancelled = true;
+      setDb((current) => {
+        current?.close();
+        return null;
+      });
+    };
+  }, []);
 
-  const results = useMemo(() => searchEntries(entries, query), [query]);
-  const current = currentId !== null ? entriesById.get(currentId) ?? null : null;
+  const normalizedQuery = useMemo(() => normalizeSearchInput(query.trim()), [query]);
+  const results = useMemo(() => {
+    if (!db || !normalizedQuery) return [];
+    return db.searchByPrefix(normalizedQuery);
+  }, [db, normalizedQuery]);
+  const current = db && currentId !== null ? db.getEntry(currentId) : null;
 
   function navigateTo(id: number) {
     if (id === currentId) return;
@@ -70,6 +95,7 @@ export default function SearchMode() {
         placeholder="読みまたは見出し語で検索"
         className="search-input"
       />
+      {!db && <p className="empty">辞書データベースを準備中…</p>}
       <ul className="result-list">
         {results.map((entry) => (
           <li key={entry.id}>
@@ -80,7 +106,7 @@ export default function SearchMode() {
           </li>
         ))}
       </ul>
-      {query && results.length === 0 && (
+      {db && query && results.length === 0 && (
         <p className="empty">該当する項目がありません</p>
       )}
       {current && (
@@ -92,7 +118,7 @@ export default function SearchMode() {
           )}
           <h2>{current.title}</h2>
           <p className="reading">{current.reading}</p>
-          {parseBody(current.body, titleToId).map((paragraph, i) => (
+          {parseBody(current.bodyHtml, titleToId).map((paragraph, i) => (
             <p key={i} className="body-paragraph">
               {paragraph.map((segment, j) => (
                 <SegmentView key={j} segment={segment} onJump={navigateTo} />
