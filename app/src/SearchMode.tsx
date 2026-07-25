@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadDummyEntries, buildTitleIdMap } from "./lib/dummyEntries";
-import { openDummyDatabase } from "./lib/db";
+import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
+import { getDictionaryBytes } from "./lib/dictionaryStorage";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseBody } from "./lib/renderBody";
 import type { Segment } from "./lib/renderBody";
+
+// 開発時はscripts/build-dummy-db.mtsが生成するダミーDBを指す。
+// 実データ配信サーバーのURLは別途決定する(docs/handoff.md参照)。
+const MANIFEST_URL = "/dictionary-manifest.json";
 
 // リンクジャンプ描画用(parseBodyのタイトル解決)。DB本体とは独立に、
 // 既存のダミーfixtureから直接構築する(理由はdocs/handoff.md参照)。
 const entries = loadDummyEntries();
 const titleToId = buildTitleIdMap(entries);
+
+type LoadState =
+  | { status: "loading" }
+  | { status: "ready" }
+  | { status: "error"; message: string };
 
 function SegmentView({ segment, onJump }: { segment: Segment; onJump: (id: number) => void }) {
   switch (segment.kind) {
@@ -42,17 +52,28 @@ function SegmentView({ segment, onJump }: { segment: Segment; onJump: (id: numbe
 
 export default function SearchMode() {
   const [db, setDb] = useState<DictionaryDb | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [query, setQuery] = useState("");
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    openDummyDatabase().then((opened) => {
+    (async () => {
+      const { bytes } = await getDictionaryBytes(MANIFEST_URL);
+      const opened = await openDatabaseFromBytes(bytes);
       if (cancelled) {
         opened.close();
-      } else {
-        setDb(opened);
+        return;
+      }
+      setDb(opened);
+      setLoadState({ status: "ready" });
+    })().catch((err: unknown) => {
+      if (!cancelled) {
+        setLoadState({
+          status: "error",
+          message: err instanceof Error ? err.message : "辞書データベースの初期化に失敗しました。",
+        });
       }
     });
     return () => {
@@ -95,7 +116,10 @@ export default function SearchMode() {
         placeholder="読みまたは見出し語で検索"
         className="search-input"
       />
-      {!db && <p className="empty">辞書データベースを準備中…</p>}
+      {loadState.status === "loading" && (
+        <p className="empty">辞書データをダウンロード(またはキャッシュから読み込み)中…</p>
+      )}
+      {loadState.status === "error" && <p className="empty error">{loadState.message}</p>}
       <ul className="result-list">
         {results.map((entry) => (
           <li key={entry.id}>

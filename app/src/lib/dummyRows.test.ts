@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDummyRows } from "./db";
+import { buildDummyRows } from "./dummyRows";
 import type { DummyEntry } from "./dummyEntries";
 
 const entries: DummyEntry[] = [

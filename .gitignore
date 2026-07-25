@@ -21,6 +21,10 @@ app/.vite/
 app/src/shared/
 app/src/fixtures/
 
+# app: build-dummy-db.mjsによる生成物(ダミーデータ由来のSQLite。実データは絶対にコミットしない)
+app/public/dictionary.sqlite3
+app/public/dictionary-manifest.json
+
 # OS
 .DS_Store
 

@@ -54,6 +54,10 @@ body {
   color: #888;
 }
 
+.empty.error {
+  color: #d9534f;
+}
+
 .detail {
   margin-top: 1.5rem;
   padding-top: 1rem;
