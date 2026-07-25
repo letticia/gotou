@@ -46,3 +46,16 @@ export function loadDummyEntries(): DummyEntry[] {
     };
   });
 }
+
+/**
+ * 見出し語 -> id の逆引きマップ(内部リンク `[[見出し語]]` の解決用)。
+ * 完全一致に加え、正規化キーでの引きも登録し多少の表記ゆれを許容する。
+ */
+export function buildTitleIdMap(entries: DummyEntry[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const entry of entries) {
+    map.set(entry.title, entry.id);
+    map.set(entry.searchKey, entry.id);
+  }
+  return map;
+}
