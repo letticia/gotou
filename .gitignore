@@ -1,0 +1,28 @@
+# factory: 生成物・キャッシュ(絶対に大辞典由来データをコミットしない)
+factory/output/
+factory/cache/
+
+# factory: DDK (Apple Dictionary Development Kit) はApple著作物のため非同梱
+factory/tools/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# app (Node/Vite)
+node_modules/
+app/dist/
+app/.vite/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# 環境変数・秘密情報
+.env
+.env.*
