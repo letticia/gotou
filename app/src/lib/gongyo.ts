@@ -17,6 +17,8 @@ export interface GongyoUnit {
 export interface GongyoPresetItem {
   unit: string;
   counter?: number;
+  /** 省略時はtrue扱い。falseの場合buildPagesでスキップされる(編集操作のオン/オフ用) */
+  enabled?: boolean;
 }
 
 export interface GongyoPreset {
@@ -73,6 +75,7 @@ export function buildPages(
 ): GongyoPage[] {
   const pages: GongyoPage[] = [];
   for (const item of preset.items) {
+    if (item.enabled === false) continue;
     const unit = unitsById.get(item.unit);
     if (!unit) continue;
     unit.body.forEach((bodyItem, bodyIndex) => {

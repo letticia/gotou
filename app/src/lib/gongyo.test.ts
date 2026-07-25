@@ -42,6 +42,19 @@ describe("buildPages", () => {
     ]);
   });
 
+  it("skips preset items with enabled: false", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "テスト差定",
+      items: [{ unit: "unit-a", enabled: false }, { unit: "unit-b" }],
+    };
+    const pages = buildPages(preset, units);
+    expect(pages).toEqual([
+      { unitId: "unit-b", bodyIndex: 0, text: "単句", ruby: undefined, counterTotal: undefined },
+    ]);
+  });
+
   it("skips preset items referencing an unknown unit", () => {
     const preset: GongyoPreset = {
       version: 1,
