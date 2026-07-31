@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "id": "tanagyo-shinbo",
+  "name": "棚経(新亡回向)",
+  "items": [
+    { "unit": "sanbujo" },
+    { "unit": "sangege" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "hajigokuge" },
+    { "unit": "kyorai-rokui" },
+    { "unit": "henjiki-darani" },
+    { "unit": "kanrosui-darani" },
+    { "unit": "nyukai-darani" },
+    { "unit": "amida-konpon-darani" },
+    { "unit": "gaki-ekomon" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "kaikyoge" },
+    { "unit": "daiku-shinjin-ganmon" },
+    { "unit": "ekomon-niibon" },
+    { "unit": "monmyo-tokuyakuge" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "shiseige" },
+    { "unit": "issai-shorei-ge" },
+    { "unit": "junen", "counter": 10 },
+    { "unit": "shoyakumon" },
+    { "unit": "nenbutsu-ichie" },
+    { "unit": "ekomon-senzo-daidai" },
+    { "unit": "so-ekoge" },
+    { "unit": "junen", "counter": 10 }
+  ]
+}
