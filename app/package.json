@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

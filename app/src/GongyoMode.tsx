@@ -46,14 +46,30 @@ function useWakeLock(active: boolean) {
   }, [active]);
 }
 
-type View = { name: "reciting" } | { name: "picker" } | { name: "editor"; preset: GongyoPreset };
+type View =
+  | { name: "reciting" }
+  | { name: "picker" }
+  | { name: "editor"; preset: GongyoPreset }
+  | { name: "import"; preset: GongyoPreset };
 
-export default function GongyoMode() {
+interface GongyoModeProps {
+  pendingImport?: GongyoPreset | null;
+  onImportHandled?: () => void;
+}
+
+export default function GongyoMode({ pendingImport, onImportHandled }: GongyoModeProps = {}) {
   const unitsById = useMemo(() => loadGongyoUnits(), []);
   const builtinPresetsById = useMemo(() => loadGongyoPresets(), []);
   const [userPresets, setUserPresets] = useState<GongyoPreset[]>(() => loadUserPresets());
   const [presetId, setPresetId] = useState<string>(() => loadLastPresetId() ?? DEFAULT_PRESET_ID);
   const [view, setView] = useState<View>({ name: "reciting" });
+
+  // 共有URLを開いた直後に取り込み確認画面へ遷移する
+  useEffect(() => {
+    if (pendingImport) {
+      setView({ name: "import", preset: pendingImport });
+    }
+  }, [pendingImport]);
 
   const userPresetsById = useMemo(() => {
     const map = new Map<string, GongyoPreset>();
@@ -104,6 +120,27 @@ export default function GongyoMode() {
     setView({ name: "picker" });
   }
 
+  // 送信元のidをそのまま使わず、取り込んだものは自分の差定として新しいidを振る
+  function importPreset(incoming: GongyoPreset) {
+    saveUserPreset({ ...incoming, id: generateUserPresetId() });
+    setUserPresets(loadUserPresets());
+  }
+
+  function handleImportFromJson(incoming: GongyoPreset) {
+    importPreset(incoming);
+  }
+
+  function handleConfirmImport(incoming: GongyoPreset) {
+    importPreset(incoming);
+    onImportHandled?.();
+    setView({ name: "picker" });
+  }
+
+  function handleDeclineImport() {
+    onImportHandled?.();
+    setView({ name: "reciting" });
+  }
+
   if (view.name === "picker") {
     return (
       <PresetPicker
@@ -113,8 +150,46 @@ export default function GongyoMode() {
         onDuplicateEdit={handleDuplicateEdit}
         onEditUser={handleEditUser}
         onDeleteUser={handleDeleteUser}
+        onImportPreset={handleImportFromJson}
         onClose={() => setView({ name: "reciting" })}
       />
+    );
+  }
+
+  if (view.name === "import") {
+    const importPages = buildPages(view.preset, unitsById);
+    const includedUnitTitles = Array.from(
+      new Set(
+        view.preset.items
+          .map((item) => unitsById.get(item.unit)?.title)
+          .filter((title): title is string => Boolean(title)),
+      ),
+    );
+    return (
+      <div className="preset-picker">
+        <div className="preset-picker-header">
+          <h2>差定を受け取りました</h2>
+        </div>
+        <p className="preset-name">{view.preset.name}</p>
+        <p className="preset-import-summary">
+          {includedUnitTitles.length}種類のunit・全{importPages.length}ページ
+        </p>
+        <ul className="preset-list">
+          {includedUnitTitles.map((title) => (
+            <li key={title} className="preset-list-item">
+              <span className="preset-name">{title}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="preset-actions">
+          <button type="button" className="preset-save" onClick={() => handleConfirmImport(view.preset)}>
+            追加する
+          </button>
+          <button type="button" className="gongyo-back" onClick={handleDeclineImport}>
+            追加しない
+          </button>
+        </div>
+      </div>
     );
   }
 

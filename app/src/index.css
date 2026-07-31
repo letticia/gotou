@@ -440,6 +440,90 @@ body {
   cursor: pointer;
 }
 
+.preset-list-item-wrapper {
+  border-bottom: 1px solid #333;
+}
+
+.preset-list-item-wrapper .preset-list-item {
+  border-bottom: none;
+}
+
+.share-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0 1.2rem;
+  background: #111;
+  border-radius: 6px;
+}
+
+.share-panel svg {
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.share-url {
+  font-size: 0.75rem;
+  color: #999;
+  word-break: break-all;
+  max-width: 90%;
+  text-align: center;
+  margin: 0;
+}
+
+.share-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.share-actions button {
+  background: none;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #fff;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.preset-import-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 4px;
+  padding: 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.preset-import-error {
+  color: #f88;
+  font-size: 0.85rem;
+}
+
+.preset-import-button {
+  margin-top: 0.6rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.preset-import-summary {
+  color: #999;
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
 .prototype-notice {
   background: #4a3510;
   color: #f2d9a0;
