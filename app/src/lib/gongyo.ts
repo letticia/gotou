@@ -11,8 +11,9 @@ export interface GongyoUnit {
   title: string;
   reading: string;
   body: GongyoUnitBodyItem[];
-  /** 省略時false。trueの場合、bodyを1画面にまとめず3行ずつバッチでページ送りする
-   * (誦経・一枚起請文等の長文向け。次ページ冒頭に前ページ最終行を薄くエコー表示する) */
+  /** 省略時false。trueの場合、bodyを1画面にまとめずバッチでページ送りする
+   * (誦経・一枚起請文等の長文向け。次ページ冒頭に前ページ最終行を薄くエコー表示する。
+   * 1タップで進む行数はpaginatedBatchSize()が1句あたりの文字数から自動で決める) */
   paginated?: boolean;
   source?: { name: string; url?: string; license: string };
 }
@@ -77,13 +78,20 @@ export function loadGongyoPresets(): Map<string, GongyoPreset> {
   return map;
 }
 
-/** paginated unitで1タップあたりに進む新規行数(開発者確認済み) */
-const PAGINATED_BATCH_SIZE = 3;
+/** paginated unitの1行あたりの文字数に応じて、1タップで進む新規行数を決める。
+ * 誦経(四誓偈・第九真身観文)のように1句が短いunitは高速に読誦するため多めの行数を、
+ * 一枚起請文・陀羅尼のように1句が長いunitは従来通り少なめの行数にする。 */
+export function paginatedBatchSize(unit: GongyoUnit): number {
+  const maxLength = unit.body.reduce((max, b) => Math.max(max, b.text.length), 0);
+  if (maxLength <= 10) return 6;
+  if (maxLength <= 20) return 4;
+  return 3;
+}
 
 /**
  * presetの各itemのunitを解決し、1画面分の表示単位(ページ)の配列にする。
  * 通常のunitはbody全体を1ページにまとめる(グループ表示)。
- * paginated unitはPAGINATED_BATCH_SIZE行ずつページを分け、2ページ目以降の冒頭に
+ * paginated unitはpaginatedBatchSize()行ずつページを分け、2ページ目以降の冒頭に
  * 直前ページ最終行を薄いエコーとして加える。解決できないunit参照はスキップする。
  */
 export function buildPages(
@@ -97,13 +105,14 @@ export function buildPages(
     if (!unit) continue;
 
     if (unit.paginated) {
-      for (let i = 0; i < unit.body.length; i += PAGINATED_BATCH_SIZE) {
+      const batchSize = paginatedBatchSize(unit);
+      for (let i = 0; i < unit.body.length; i += batchSize) {
         const lines: GongyoPageLine[] = [];
         if (i > 0) {
           const prev = unit.body[i - 1];
           lines.push({ text: prev.text, ruby: prev.ruby, dimmed: true });
         }
-        for (const b of unit.body.slice(i, i + PAGINATED_BATCH_SIZE)) {
+        for (const b of unit.body.slice(i, i + batchSize)) {
           lines.push({ text: b.text, ruby: b.ruby });
         }
         pages.push({
@@ -149,15 +158,18 @@ export function lineSizeTier(lineCount: number): 1 | 2 | 3 | 4 {
   return 4;
 }
 
-/** paginated表示時、行の文字数に応じた文字サイズの段階(1が最大)を返す。
+/** paginated表示時、行の文字数と行数に応じた文字サイズの段階(1が最大)を返す。
  * 陀羅尼(ひらがな表記で1行が長くなりがち)や一枚起請文の長文でも画面に収まるようにする。
- * エコー表示(dimmed)行は別途固定の小さいスタイルで表示するため対象外にする。 */
+ * paginatedBatchSize()により行数が多くなるunit(誦経等)は、行が短くても
+ * 少し縮小して画面に収まる余裕を持たせる。エコー表示(dimmed)行は別途固定の
+ * 小さいスタイルで表示するため対象外にする。 */
 export function paginatedSizeTier(lines: GongyoPageLine[]): 1 | 2 | 3 | 4 {
-  const maxLength = lines
-    .filter((line) => !line.dimmed)
-    .reduce((max, line) => Math.max(max, line.text.length), 0);
-  if (maxLength <= 10) return 1;
-  if (maxLength <= 18) return 2;
-  if (maxLength <= 28) return 3;
-  return 4;
+  const visible = lines.filter((line) => !line.dimmed);
+  const maxLength = visible.reduce((max, line) => Math.max(max, line.text.length), 0);
+  let tier: 1 | 2 | 3 | 4 = 1;
+  if (maxLength > 28) tier = 4;
+  else if (maxLength > 18) tier = 3;
+  else if (maxLength > 10) tier = 2;
+  if (visible.length > 4 && tier < 2) tier = 2;
+  return tier;
 }

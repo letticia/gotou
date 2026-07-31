@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildPages, lineSizeTier, paginatedSizeTier, resolveDisplayRuby } from "./gongyo";
+import {
+  buildPages,
+  lineSizeTier,
+  paginatedBatchSize,
+  paginatedSizeTier,
+  resolveDisplayRuby,
+} from "./gongyo";
 import type { GongyoPage, GongyoPreset, GongyoUnit } from "./gongyo";
 
 const units = new Map<string, GongyoUnit>([
@@ -31,12 +37,13 @@ const units = new Map<string, GongyoUnit>([
       title: "ロングユニット",
       reading: "ろんぐゆにっと",
       paginated: true,
+      // 1句12文字(<=20文字なのでpaginatedBatchSize=4になる)
       body: [
-        { text: "一", ruby: "いち" },
-        { text: "二", ruby: "に" },
-        { text: "三", ruby: "さん" },
-        { text: "四", ruby: "よん" },
-        { text: "五", ruby: "ご" },
+        { text: "AAAAAAAAAAAA", ruby: "a" },
+        { text: "BBBBBBBBBBBB", ruby: "b" },
+        { text: "CCCCCCCCCCCC", ruby: "c" },
+        { text: "DDDDDDDDDDDD", ruby: "d" },
+        { text: "EEEEEEEEEEEE", ruby: "e" },
       ],
     },
   ],
@@ -72,7 +79,7 @@ describe("buildPages", () => {
     ]);
   });
 
-  it("splits a paginated unit into batches of 3 new lines, echoing the previous page's last line", () => {
+  it("splits a paginated unit using paginatedBatchSize(), echoing the previous page's last line", () => {
     const preset: GongyoPreset = {
       version: 1,
       id: "p",
@@ -80,14 +87,16 @@ describe("buildPages", () => {
       items: [{ unit: "unit-long" }],
     };
     const pages = buildPages(preset, units);
+    // 1句12文字 -> paginatedBatchSize=4。5句あるので4句+1句の2ページに分かれる
     expect(pages).toEqual([
       {
         unitId: "unit-long",
         unitTitle: "ロングユニット",
         lines: [
-          { text: "一", ruby: "いち" },
-          { text: "二", ruby: "に" },
-          { text: "三", ruby: "さん" },
+          { text: "AAAAAAAAAAAA", ruby: "a" },
+          { text: "BBBBBBBBBBBB", ruby: "b" },
+          { text: "CCCCCCCCCCCC", ruby: "c" },
+          { text: "DDDDDDDDDDDD", ruby: "d" },
         ],
         paginated: true,
         counterTotal: undefined,
@@ -97,9 +106,8 @@ describe("buildPages", () => {
         unitTitle: "ロングユニット",
         paginated: true,
         lines: [
-          { text: "三", ruby: "さん", dimmed: true },
-          { text: "四", ruby: "よん" },
-          { text: "五", ruby: "ご" },
+          { text: "DDDDDDDDDDDD", ruby: "d", dimmed: true },
+          { text: "EEEEEEEEEEEE", ruby: "e" },
         ],
         counterTotal: undefined,
       },
@@ -190,7 +198,7 @@ describe("lineSizeTier", () => {
 });
 
 describe("paginatedSizeTier", () => {
-  it("returns tier 1 when the longest non-dimmed line is short", () => {
+  it("returns tier 1 when the longest non-dimmed line is short and there are few lines", () => {
     expect(paginatedSizeTier([{ text: "我建超世願" }, { text: "必至無上道" }])).toBe(1);
   });
 
@@ -210,5 +218,42 @@ describe("paginatedSizeTier", () => {
 
   it("returns tier 1 for an empty lines array", () => {
     expect(paginatedSizeTier([])).toBe(1);
+  });
+
+  it("bumps short-line pages down to at least tier 2 when there are many lines (larger batch sizes)", () => {
+    const lines = Array.from({ length: 6 }, (_, i) => ({ text: `句${i}` }));
+    expect(paginatedSizeTier(lines)).toBe(2);
+  });
+
+  it("does not bump the tier down when there are 4 or fewer lines", () => {
+    const lines = Array.from({ length: 4 }, (_, i) => ({ text: `句${i}` }));
+    expect(paginatedSizeTier(lines)).toBe(1);
+  });
+});
+
+describe("paginatedBatchSize", () => {
+  function unitWithMaxLength(maxLength: number): GongyoUnit {
+    return {
+      id: "u",
+      title: "u",
+      reading: "u",
+      paginated: true,
+      body: [{ text: "a".repeat(maxLength) }],
+    };
+  }
+
+  it("returns 6 when the longest line is 10 characters or fewer", () => {
+    expect(paginatedBatchSize(unitWithMaxLength(5))).toBe(6);
+    expect(paginatedBatchSize(unitWithMaxLength(10))).toBe(6);
+  });
+
+  it("returns 4 when the longest line is 11-20 characters", () => {
+    expect(paginatedBatchSize(unitWithMaxLength(11))).toBe(4);
+    expect(paginatedBatchSize(unitWithMaxLength(20))).toBe(4);
+  });
+
+  it("returns 3 when the longest line exceeds 20 characters", () => {
+    expect(paginatedBatchSize(unitWithMaxLength(21))).toBe(3);
+    expect(paginatedBatchSize(unitWithMaxLength(114))).toBe(3);
   });
 });
