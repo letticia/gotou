@@ -44,6 +44,8 @@
 - 辞書データの利用許諾は未取得。よって実データは一切公開しない(CLAUDE.mdの掟)。
   appはダミーfixtureから`app/scripts/build-dummy-db.mjs`(factory側`build_sqlite.py`を
   呼び出す)で作った非公開の開発用SQLiteのみを使っている。
+- **商標確認完了**: J-PlatPatで「語灯」の簡易検索(四法すべて)を実施、抵触なし
+  (2026-07-31確認、開発者による)。
 
 ## 決定事項サマリ
 
