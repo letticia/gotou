@@ -252,6 +252,10 @@ body {
   font-weight: bold;
   line-height: 1.4;
   margin: 0;
+  /* 陀羅尼等ひらがな主体の長文で、任意の文字間ではなく既存の全角スペースの
+     位置でのみ改行させる(CJKの既定は任意の文字間で改行できてしまうため) */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .gongyo-counter {

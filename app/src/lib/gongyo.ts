@@ -148,3 +148,16 @@ export function lineSizeTier(lineCount: number): 1 | 2 | 3 | 4 {
   if (lineCount <= 6) return 3;
   return 4;
 }
+
+/** paginated表示時、行の文字数に応じた文字サイズの段階(1が最大)を返す。
+ * 陀羅尼(ひらがな表記で1行が長くなりがち)や一枚起請文の長文でも画面に収まるようにする。
+ * エコー表示(dimmed)行は別途固定の小さいスタイルで表示するため対象外にする。 */
+export function paginatedSizeTier(lines: GongyoPageLine[]): 1 | 2 | 3 | 4 {
+  const maxLength = lines
+    .filter((line) => !line.dimmed)
+    .reduce((max, line) => Math.max(max, line.text.length), 0);
+  if (maxLength <= 10) return 1;
+  if (maxLength <= 18) return 2;
+  if (maxLength <= 28) return 3;
+  return 4;
+}

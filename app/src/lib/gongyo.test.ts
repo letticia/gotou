@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPages, lineSizeTier, resolveDisplayRuby } from "./gongyo";
+import { buildPages, lineSizeTier, paginatedSizeTier, resolveDisplayRuby } from "./gongyo";
 import type { GongyoPage, GongyoPreset, GongyoUnit } from "./gongyo";
 
 const units = new Map<string, GongyoUnit>([
@@ -186,5 +186,29 @@ describe("lineSizeTier", () => {
   it("returns tier 4 for 7+ lines", () => {
     expect(lineSizeTier(7)).toBe(4);
     expect(lineSizeTier(20)).toBe(4);
+  });
+});
+
+describe("paginatedSizeTier", () => {
+  it("returns tier 1 when the longest non-dimmed line is short", () => {
+    expect(paginatedSizeTier([{ text: "我建超世願" }, { text: "必至無上道" }])).toBe(1);
+  });
+
+  it("returns a smaller tier as the longest non-dimmed line gets longer", () => {
+    expect(paginatedSizeTier([{ text: "a".repeat(15) }])).toBe(2);
+    expect(paginatedSizeTier([{ text: "a".repeat(25) }])).toBe(3);
+    expect(paginatedSizeTier([{ text: "a".repeat(31) }])).toBe(4);
+  });
+
+  it("ignores dimmed echo lines when computing the tier", () => {
+    const lines = [
+      { text: "a".repeat(40), dimmed: true },
+      { text: "短い行" },
+    ];
+    expect(paginatedSizeTier(lines)).toBe(1);
+  });
+
+  it("returns tier 1 for an empty lines array", () => {
+    expect(paginatedSizeTier([])).toBe(1);
   });
 });

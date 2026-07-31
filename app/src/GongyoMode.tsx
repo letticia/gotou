@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   buildPages,
   lineSizeTier,
+  paginatedSizeTier,
   loadGongyoPresets,
   loadGongyoUnits,
   resolveDisplayRuby,
@@ -245,7 +246,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
 
   const page = pages[nav.pageIndex];
   const isFinished = nav.pageIndex === pages.length - 1 && (nav.counterRemaining ?? 0) === 0;
-  const sizeTier = page.paginated ? 1 : lineSizeTier(page.lines.length);
+  const sizeTier = page.paginated ? paginatedSizeTier(page.lines) : lineSizeTier(page.lines.length);
 
   function handleTap() {
     setNav((prev) => advance(prev, pages));
