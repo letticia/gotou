@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { buildPages, loadGongyoPresets, loadGongyoUnits, resolveDisplayRuby } from "./lib/gongyo";
+import {
+  buildPages,
+  lineSizeTier,
+  loadGongyoPresets,
+  loadGongyoUnits,
+  resolveDisplayRuby,
+} from "./lib/gongyo";
 import type { GongyoPreset } from "./lib/gongyo";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
@@ -63,6 +69,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   const [userPresets, setUserPresets] = useState<GongyoPreset[]>(() => loadUserPresets());
   const [presetId, setPresetId] = useState<string>(() => loadLastPresetId() ?? DEFAULT_PRESET_ID);
   const [view, setView] = useState<View>({ name: "reciting" });
+  const [introShown, setIntroShown] = useState(false);
 
   // 共有URLを開いた直後に取り込み確認画面へ遷移する
   useEffect(() => {
@@ -92,6 +99,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   function handleStart(id: string) {
     setPresetId(id);
     saveLastPresetId(id);
+    setIntroShown(false);
     setView({ name: "reciting" });
   }
 
@@ -215,9 +223,29 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     );
   }
 
+  function handleOpenPicker(event: React.MouseEvent) {
+    event.stopPropagation();
+    setView({ name: "picker" });
+  }
+
+  if (!introShown) {
+    return (
+      <div className="gongyo gongyo-intro" onClick={() => setIntroShown(true)}>
+        <div className="gongyo-header">
+          <button type="button" className="gongyo-preset-select" onClick={handleOpenPicker}>
+            差定を選ぶ
+          </button>
+        </div>
+        <div className="gongyo-body">
+          <p className="gongyo-intro-name">{preset.name}</p>
+        </div>
+      </div>
+    );
+  }
+
   const page = pages[nav.pageIndex];
   const isFinished = nav.pageIndex === pages.length - 1 && (nav.counterRemaining ?? 0) === 0;
-  const displayRuby = resolveDisplayRuby(page, nav.counterRemaining);
+  const sizeTier = page.paginated ? 1 : lineSizeTier(page.lines.length);
 
   function handleTap() {
     setNav((prev) => advance(prev, pages));
@@ -226,11 +254,6 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   function handleBack(event: React.MouseEvent) {
     event.stopPropagation();
     setNav((prev) => goBack(prev, pages));
-  }
-
-  function handleOpenPicker(event: React.MouseEvent) {
-    event.stopPropagation();
-    setView({ name: "picker" });
   }
 
   return (
@@ -248,9 +271,25 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
           {nav.pageIndex + 1} / {pages.length}
         </span>
       </div>
+      <div className="gongyo-labels">
+        <span className="gongyo-preset-name">{preset.name}</span>
+        <span className="gongyo-unit-title">{page.unitTitle}</span>
+      </div>
       <div className="gongyo-body">
-        {displayRuby && <p className="gongyo-ruby">{displayRuby}</p>}
-        <p className="gongyo-text">{page.text}</p>
+        <div className={`gongyo-lines gongyo-lines-size-${sizeTier}`}>
+          {page.lines.map((line, index) => {
+            const ruby = index === 0 ? resolveDisplayRuby(page, nav.counterRemaining) : line.ruby;
+            return (
+              <div
+                key={index}
+                className={line.dimmed ? "gongyo-line gongyo-line-dimmed" : "gongyo-line"}
+              >
+                {ruby && <p className="gongyo-ruby">{ruby}</p>}
+                <p className="gongyo-text">{line.text}</p>
+              </div>
+            );
+          })}
+        </div>
         {nav.counterRemaining !== null && (
           <p className="gongyo-counter">{nav.counterRemaining}</p>
         )}

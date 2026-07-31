@@ -11,6 +11,9 @@ export interface GongyoUnit {
   title: string;
   reading: string;
   body: GongyoUnitBodyItem[];
+  /** 省略時false。trueの場合、bodyを1画面にまとめず3行ずつバッチでページ送りする
+   * (誦経・一枚起請文等の長文向け。次ページ冒頭に前ページ最終行を薄くエコー表示する) */
+  paginated?: boolean;
   source?: { name: string; url?: string; license: string };
 }
 
@@ -28,11 +31,21 @@ export interface GongyoPreset {
   items: GongyoPresetItem[];
 }
 
-export interface GongyoPage {
-  unitId: string;
-  bodyIndex: number;
+export interface GongyoPageLine {
   text: string;
   ruby?: string;
+  /** paginated unitの2ページ目以降、直前ページ最終行のエコー表示であることを示す */
+  dimmed?: boolean;
+}
+
+export interface GongyoPage {
+  unitId: string;
+  /** 常時ラベル表示用 */
+  unitTitle: string;
+  lines: GongyoPageLine[];
+  /** paginated unit由来のページかどうか。trueの場合、表示側はlineSizeTierによる
+   * 縮小をせず常に標準サイズで表示する(バッチ行数を読みやすく保つための固定サイズ) */
+  paginated?: boolean;
   counterTotal?: number;
   counterRubyOverrides?: Record<number, string>;
 }
@@ -64,10 +77,14 @@ export function loadGongyoPresets(): Map<string, GongyoPreset> {
   return map;
 }
 
+/** paginated unitで1タップあたりに進む新規行数(開発者確認済み) */
+const PAGINATED_BATCH_SIZE = 3;
+
 /**
- * presetの各itemのunitを解決し、unit.bodyの各要素を1ページとして展開する。
- * bodyIndexが読書位置アンカー(docs/saijo-spec.md「unit id + bodyインデックス」)。
- * 解決できないunit参照はスキップする。
+ * presetの各itemのunitを解決し、1画面分の表示単位(ページ)の配列にする。
+ * 通常のunitはbody全体を1ページにまとめる(グループ表示)。
+ * paginated unitはPAGINATED_BATCH_SIZE行ずつページを分け、2ページ目以降の冒頭に
+ * 直前ページ最終行を薄いエコーとして加える。解決できないunit参照はスキップする。
  */
 export function buildPages(
   preset: GongyoPreset,
@@ -78,21 +95,41 @@ export function buildPages(
     if (item.enabled === false) continue;
     const unit = unitsById.get(item.unit);
     if (!unit) continue;
-    unit.body.forEach((bodyItem, bodyIndex) => {
+
+    if (unit.paginated) {
+      for (let i = 0; i < unit.body.length; i += PAGINATED_BATCH_SIZE) {
+        const lines: GongyoPageLine[] = [];
+        if (i > 0) {
+          const prev = unit.body[i - 1];
+          lines.push({ text: prev.text, ruby: prev.ruby, dimmed: true });
+        }
+        for (const b of unit.body.slice(i, i + PAGINATED_BATCH_SIZE)) {
+          lines.push({ text: b.text, ruby: b.ruby });
+        }
+        pages.push({
+          unitId: unit.id,
+          unitTitle: unit.title,
+          lines,
+          paginated: true,
+          counterTotal: item.counter,
+        });
+      }
+    } else {
       pages.push({
         unitId: unit.id,
-        bodyIndex,
-        text: bodyItem.text,
-        ruby: bodyItem.ruby,
+        unitTitle: unit.title,
+        lines: unit.body.map((b) => ({ text: b.text, ruby: b.ruby })),
         counterTotal: item.counter,
-        counterRubyOverrides: bodyItem.counterRubyOverrides,
+        counterRubyOverrides:
+          unit.body.length === 1 ? unit.body[0].counterRubyOverrides : undefined,
       });
-    });
+    }
   }
   return pages;
 }
 
-/** counterRemaining(残数)に応じた読みの上書きがあればそれを、無ければ通常のrubyを返す */
+/** counterRemaining(残数)に応じた読みの上書きがあればそれを、無ければ最初の行の通常のrubyを返す。
+ * counter付きページは常に1行のみのため、最初の行にのみ適用すればよい。 */
 export function resolveDisplayRuby(
   page: GongyoPage,
   counterRemaining: number | null,
@@ -101,5 +138,13 @@ export function resolveDisplayRuby(
     const override = page.counterRubyOverrides?.[counterRemaining];
     if (override !== undefined) return override;
   }
-  return page.ruby;
+  return page.lines[0]?.ruby;
+}
+
+/** グループ表示時、行数に応じた文字サイズの段階(1が最大)を返す */
+export function lineSizeTier(lineCount: number): 1 | 2 | 3 | 4 {
+  if (lineCount <= 2) return 1;
+  if (lineCount <= 4) return 2;
+  if (lineCount <= 6) return 3;
+  return 4;
 }

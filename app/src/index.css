@@ -271,6 +271,55 @@ body {
   color: #f88;
 }
 
+.gongyo-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1.5rem;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.gongyo-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.gongyo-lines-size-1 .gongyo-line .gongyo-text {
+  font-size: 3rem;
+}
+
+.gongyo-lines-size-2 .gongyo-line .gongyo-text {
+  font-size: 2.2rem;
+}
+
+.gongyo-lines-size-3 .gongyo-line .gongyo-text {
+  font-size: 1.7rem;
+}
+
+.gongyo-lines-size-4 .gongyo-line .gongyo-text {
+  font-size: 1.3rem;
+}
+
+.gongyo-line-dimmed {
+  opacity: 0.35;
+}
+
+.gongyo-line-dimmed .gongyo-text {
+  font-size: 1.6rem;
+}
+
+.gongyo-line-dimmed .gongyo-ruby {
+  font-size: 0.9rem;
+}
+
+.gongyo-intro-name {
+  font-size: 1.8rem;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
 .gongyo-preset-select {
   background: none;
   border: none;

@@ -3,9 +3,9 @@ import { advance, goBack, initState } from "./gongyoNav";
 import type { GongyoPage } from "./gongyo";
 
 const pages: GongyoPage[] = [
-  { unitId: "koge", bodyIndex: 0, text: "香偈句" },
-  { unitId: "junen", bodyIndex: 0, text: "南無阿弥陀仏", counterTotal: 3 },
-  { unitId: "shiseige", bodyIndex: 0, text: "四誓偈句" },
+  { unitId: "koge", unitTitle: "香偈", lines: [{ text: "香偈句" }] },
+  { unitId: "junen", unitTitle: "十念", lines: [{ text: "南無阿弥陀仏" }], counterTotal: 3 },
+  { unitId: "shiseige", unitTitle: "四誓偈", lines: [{ text: "四誓偈句" }] },
 ];
 
 describe("gongyoNav", () => {
