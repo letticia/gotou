@@ -34,6 +34,7 @@ export default function SearchMode() {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
 
@@ -135,11 +136,14 @@ export default function SearchMode() {
     }
   }
 
-  // 記事を切り替えるたびに先頭までスクロールし直す。末尾の関連リンクから遷移元より
-  // 短い記事へ移動した際、スクロール位置が据え置きで何も表示されない画面になるのを防ぐ
+  // 記事を切り替えるたびに本文エリアの先頭が見えるようスクロールし直す。
+  // 検索結果一覧はqueryが空にならない限り本文の上に表示され続けるため、
+  // 一覧が長いと本文がずっと下に押し出され「遷移できたか分からない」状態になる。
+  // window.scrollTo(top:0)だと一覧の先頭に戻るだけで本文が見えないため、
+  // 本文エリア自体をビューへスクロールする。
   useEffect(() => {
     if (current) {
-      window.scrollTo({ top: 0 });
+      detailRef.current?.scrollIntoView({ block: "start" });
     }
   }, [current?.id]);
 
@@ -214,7 +218,7 @@ export default function SearchMode() {
         <p className="empty">該当する項目がありません</p>
       )}
       {current && (
-        <div className="detail">
+        <div className="detail" ref={detailRef}>
           {history.length > 0 && (
             <button type="button" className="back-button" onClick={goBack}>
               ← 戻る
