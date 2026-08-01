@@ -597,3 +597,20 @@ body {
   padding: 0.5rem 1.5rem;
   text-align: center;
 }
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background: #12324a;
+  color: #cfe6f7;
+  font-size: 0.85rem;
+  padding: 0.5rem 1.5rem;
+  text-align: center;
+}
+
+.update-banner button {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+}

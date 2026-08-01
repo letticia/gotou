@@ -23,14 +23,28 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((name) => name.startsWith("gotou-shell-") && name !== SHELL_CACHE)
-          .map((name) => caches.delete(name)),
+    Promise.all([
+      caches.keys().then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name.startsWith("gotou-shell-") && name !== SHELL_CACHE)
+            .map((name) => caches.delete(name)),
+        ),
       ),
-    ),
+      // skipWaiting経由でactivateした新SWが、リロードなしで即座に既存ページの
+      // 制御を握れるようにする(自動skipWaitingはしていないため、通常の
+      // ライフサイクルでは無関係)
+      self.clients.claim(),
+    ]),
   );
+});
+
+// ページ側(useServiceWorkerUpdateの「再読み込み」操作)からの明示的な指示でのみ、
+// 待機中のSWをactivateさせる。自動では呼ばない。
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {

@@ -3,12 +3,14 @@ import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
+import { useServiceWorkerUpdate } from "./useServiceWorkerUpdate";
 
 type Mode = "search" | "gongyo";
 
 export default function App() {
   const [mode, setMode] = useState<Mode>("search");
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
+  const { updateAvailable, applyUpdate } = useServiceWorkerUpdate();
 
   // 差定の共有URL(#share=...)を開いた場合、勤行モードへ切り替えて取り込み確認を出す
   useEffect(() => {
@@ -25,6 +27,14 @@ export default function App() {
       <div className="prototype-notice">
         これは開発中のプロトタイプです。収録内容はダミーデータで、浄土宗大辞典の内容ではありません。浄土宗の公式アプリではありません。
       </div>
+      {updateAvailable && (
+        <div className="update-banner">
+          <span>アプリの更新があります。</span>
+          <button type="button" onClick={applyUpdate}>
+            再読み込み
+          </button>
+        </div>
+      )}
       <nav className="mode-tabs">
         <button
           type="button"
