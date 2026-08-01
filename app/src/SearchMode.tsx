@@ -135,6 +135,14 @@ export default function SearchMode() {
     }
   }
 
+  // 記事を切り替えるたびに先頭までスクロールし直す。末尾の関連リンクから遷移元より
+  // 短い記事へ移動した際、スクロール位置が据え置きで何も表示されない画面になるのを防ぐ
+  useEffect(() => {
+    if (current) {
+      window.scrollTo({ top: 0 });
+    }
+  }, [current?.id]);
+
   // factory生成の本物のHTMLにはリンク切れの見た目が付いていないため、描画後に走査して付与する
   useEffect(() => {
     const container = bodyRef.current;
