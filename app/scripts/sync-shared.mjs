@@ -28,6 +28,10 @@ const fileCopies = [
     join(REPO_DIR, "shared", "variants.json"),
     join(APP_DIR, "src", "shared", "variants.json"),
   ],
+  [
+    join(REPO_DIR, "shared", "schema.sql"),
+    join(APP_DIR, "src", "shared", "schema.sql"),
+  ],
 ];
 
 for (const [src, dest] of fileCopies) {

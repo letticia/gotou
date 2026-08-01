@@ -9,6 +9,10 @@ export type DictionarySource = "cache" | "network";
 export type ProgressCallback = (receivedBytes: number, totalBytes: number) => void;
 
 const CACHE_NAME = "gotou-dictionary-v1";
+// "live"取得元(dictionaryAcquisition.ts)専用の別キャッシュ。static用のCACHE_NAMEとは
+// 完全に分離し、どちらのモードでビルドされた場合でも互いのエントリを誤って拾わないようにする。
+const LIVE_CACHE_NAME = "gotou-dictionary-live-v1";
+const LIVE_CACHE_KEY = "https://gotou.invalid/live-dictionary";
 
 /** バージョンをクエリパラメータとして埋め込み、バージョンごとに別のCacheキーになるようにする */
 export function withVersion(url: string, version: string): string {
@@ -42,6 +46,28 @@ async function matchAnyCachedDictionary(cache: Cache): Promise<Uint8Array | null
   const response = await cache.match(keys[0]);
   if (!response) return null;
   return new Uint8Array(await response.arrayBuffer());
+}
+
+/** "live"取得元でビルド済みの辞書DBがCache APIに保存済みかどうかだけを確認する
+ * (ネットワークには触れない。staticモードのhasCachedDictionaryと同じ役割の別版)。 */
+export async function hasCachedLiveDictionary(): Promise<boolean> {
+  const cache = await caches.open(LIVE_CACHE_NAME);
+  const keys = await cache.keys();
+  return keys.length > 0;
+}
+
+/** アプリ内で構築したSQLiteのバイト列を"live"専用キャッシュに保存する */
+export async function storeLiveDictionaryBytes(bytes: Uint8Array): Promise<void> {
+  const cache = await caches.open(LIVE_CACHE_NAME);
+  // Uint8Arrayをコピーし、ArrayBufferLike(SharedArrayBuffer等)ではなく具体的な
+  // ArrayBufferに裏付けられた型にしてResponseのBodyInit型要件を満たす
+  await cache.put(LIVE_CACHE_KEY, new Response(new Uint8Array(bytes)));
+}
+
+/** "live"専用キャッシュに保存済みのバイト列を読み出す(無ければnull) */
+export async function readCachedLiveDictionaryBytes(): Promise<Uint8Array | null> {
+  const cache = await caches.open(LIVE_CACHE_NAME);
+  return matchAnyCachedDictionary(cache);
 }
 
 /** レスポンスボディをストリームで読みつつonProgressで進捗を報告し、最終的なバイト列を返す */

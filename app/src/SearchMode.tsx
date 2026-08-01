@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
-import { getDictionaryBytes, hasCachedDictionary } from "./lib/dictionaryStorage";
+import {
+  getDictionaryBytes,
+  hasCachedDictionary,
+  hasCachedLiveDictionary,
+  readCachedLiveDictionaryBytes,
+  storeLiveDictionaryBytes,
+} from "./lib/dictionaryStorage";
+import {
+  acquireDictionaryFromSource,
+  acquisitionProgressText,
+} from "./lib/dictionaryAcquisition";
+import type { AcquisitionProgress } from "./lib/dictionaryAcquisition";
 import { formatBytes } from "./lib/formatBytes";
 import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
@@ -11,6 +22,12 @@ import { parseInternalLinkTarget } from "./lib/internalLinks";
 // 実データ配信サーバーのURLは別途決定する(docs/handoff.md参照)。
 const MANIFEST_URL = `${import.meta.env.BASE_URL}dictionary-manifest.json`;
 
+// "static"(既定): 従来通り静的なdictionary.sqlite3/manifestをダウンロードする
+//   (dev/test/CI/公開Pagesは常にこちら)。
+// "live": アプリ自身が浄土宗大辞典に直接アクセスし、その場で変換する
+//   (開発者本人がローカルで意図的にビルドする場合のみ想定。公開デプロイには使わない)。
+const DICTIONARY_SOURCE = import.meta.env.VITE_DICTIONARY_SOURCE === "live" ? "live" : "static";
+
 type LoadState =
   | { status: "checking" }
   // ホーム画面に追加(PWAインストール)されていない通常のブラウザタブ向け。
@@ -19,6 +36,8 @@ type LoadState =
   // インストール済みだが未ダウンロード。ユーザーの明示的なボタン操作を待つ
   | { status: "awaiting-download" }
   | { status: "downloading"; receivedBytes: number; totalBytes: number }
+  // "live"取得元でのダウンロード中(フェーズごとの進捗)
+  | { status: "acquiring"; progress: AcquisitionProgress }
   | { status: "ready" }
   | { status: "error"; message: string };
 
@@ -35,13 +54,7 @@ export default function SearchMode() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadDictionary() {
-      setLoadState({ status: "checking" });
-      const { bytes } = await getDictionaryBytes(MANIFEST_URL, (receivedBytes, totalBytes) => {
-        if (!cancelled) {
-          setLoadState({ status: "downloading", receivedBytes, totalBytes });
-        }
-      });
+    async function openAndFinish(bytes: Uint8Array) {
       const opened = await openDatabaseFromBytes(bytes);
       if (cancelled) {
         opened.close();
@@ -49,6 +62,35 @@ export default function SearchMode() {
       }
       setDb(opened);
       setLoadState({ status: "ready" });
+    }
+
+    async function loadStaticDictionary() {
+      setLoadState({ status: "checking" });
+      const { bytes } = await getDictionaryBytes(MANIFEST_URL, (receivedBytes, totalBytes) => {
+        if (!cancelled) {
+          setLoadState({ status: "downloading", receivedBytes, totalBytes });
+        }
+      });
+      await openAndFinish(bytes);
+    }
+
+    async function acquireLiveDictionary() {
+      setLoadState({ status: "checking" });
+      const bytes = await acquireDictionaryFromSource((progress) => {
+        if (!cancelled) setLoadState({ status: "acquiring", progress });
+      });
+      await storeLiveDictionaryBytes(bytes);
+      await openAndFinish(bytes);
+    }
+
+    async function loadCachedLiveDictionary() {
+      setLoadState({ status: "checking" });
+      const bytes = await readCachedLiveDictionaryBytes();
+      if (!bytes) {
+        setLoadState({ status: "awaiting-download" });
+        return;
+      }
+      await openAndFinish(bytes);
     }
 
     function handleError(err: unknown) {
@@ -62,20 +104,31 @@ export default function SearchMode() {
 
     if (!isStandalonePwa()) {
       setLoadState({ status: "not-installed" });
-    } else {
-      hasCachedDictionary()
+    } else if (DICTIONARY_SOURCE === "live") {
+      hasCachedLiveDictionary()
         .then((cached) => {
           if (cancelled) return;
           if (cached) {
-            loadDictionary().catch(handleError);
+            loadCachedLiveDictionary().catch(handleError);
           } else {
             setLoadState({ status: "awaiting-download" });
           }
         })
         .catch(handleError);
+      loadDictionaryRef.current = () => acquireLiveDictionary().catch(handleError);
+    } else {
+      hasCachedDictionary()
+        .then((cached) => {
+          if (cancelled) return;
+          if (cached) {
+            loadStaticDictionary().catch(handleError);
+          } else {
+            setLoadState({ status: "awaiting-download" });
+          }
+        })
+        .catch(handleError);
+      loadDictionaryRef.current = () => loadStaticDictionary().catch(handleError);
     }
-
-    loadDictionaryRef.current = () => loadDictionary().catch(handleError);
 
     return () => {
       cancelled = true;
@@ -183,6 +236,11 @@ export default function SearchMode() {
                 (loadState.receivedBytes / loadState.totalBytes) * 100,
               )}%)`}
           </p>
+        </div>
+      )}
+      {loadState.status === "acquiring" && (
+        <div className="download-progress">
+          <p className="empty">{acquisitionProgressText(loadState.progress)}</p>
         </div>
       )}
       {loadState.status === "error" && <p className="empty error">{loadState.message}</p>}
