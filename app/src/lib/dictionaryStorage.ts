@@ -28,6 +28,14 @@ export function concatChunks(chunks: Uint8Array[], totalLength: number): Uint8Ar
   return result;
 }
 
+/** ネットワークに触れず、辞書DBがCache APIに(バージョン問わず)何か保存済みかどうかだけを確認する。
+ * 「初回ダウンロードのみユーザー操作を要求し、以降は自動読み込みする」の判定に使う。 */
+export async function hasCachedDictionary(): Promise<boolean> {
+  const cache = await caches.open(CACHE_NAME);
+  const keys = await cache.keys();
+  return keys.length > 0;
+}
+
 async function matchAnyCachedDictionary(cache: Cache): Promise<Uint8Array | null> {
   const keys = await cache.keys();
   if (keys.length === 0) return null;

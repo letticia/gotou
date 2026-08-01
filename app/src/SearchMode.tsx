@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
-import { getDictionaryBytes } from "./lib/dictionaryStorage";
+import { getDictionaryBytes, hasCachedDictionary } from "./lib/dictionaryStorage";
 import { formatBytes } from "./lib/formatBytes";
+import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
 
@@ -12,6 +13,11 @@ const MANIFEST_URL = `${import.meta.env.BASE_URL}dictionary-manifest.json`;
 
 type LoadState =
   | { status: "checking" }
+  // ホーム画面に追加(PWAインストール)されていない通常のブラウザタブ向け。
+  // 未許諾の辞書データを誰でも取得できてしまわないよう、ダウンロード自体を発生させない。
+  | { status: "not-installed" }
+  // インストール済みだが未ダウンロード。ユーザーの明示的なボタン操作を待つ
+  | { status: "awaiting-download" }
   | { status: "downloading"; receivedBytes: number; totalBytes: number }
   | { status: "ready" }
   | { status: "error"; message: string };
@@ -23,10 +29,14 @@ export default function SearchMode() {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
+  const loadDictionaryRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function loadDictionary() {
+      setLoadState({ status: "checking" });
       const { bytes } = await getDictionaryBytes(MANIFEST_URL, (receivedBytes, totalBytes) => {
         if (!cancelled) {
           setLoadState({ status: "downloading", receivedBytes, totalBytes });
@@ -39,14 +49,34 @@ export default function SearchMode() {
       }
       setDb(opened);
       setLoadState({ status: "ready" });
-    })().catch((err: unknown) => {
+    }
+
+    function handleError(err: unknown) {
       if (!cancelled) {
         setLoadState({
           status: "error",
           message: err instanceof Error ? err.message : "辞書データベースの初期化に失敗しました。",
         });
       }
-    });
+    }
+
+    if (!isStandalonePwa()) {
+      setLoadState({ status: "not-installed" });
+    } else {
+      hasCachedDictionary()
+        .then((cached) => {
+          if (cancelled) return;
+          if (cached) {
+            loadDictionary().catch(handleError);
+          } else {
+            setLoadState({ status: "awaiting-download" });
+          }
+        })
+        .catch(handleError);
+    }
+
+    loadDictionaryRef.current = () => loadDictionary().catch(handleError);
+
     return () => {
       cancelled = true;
       setDb((current) => {
@@ -98,6 +128,35 @@ export default function SearchMode() {
       anchor.classList.toggle("broken", resolved === null);
     }
   }, [current?.id]);
+
+  if (loadState.status === "not-installed") {
+    return (
+      <div className="app">
+        <p className="empty">
+          このアプリをホーム画面に追加してからご利用ください。
+          <br />
+          (ブラウザの共有メニュー等から「ホーム画面に追加」)
+        </p>
+      </div>
+    );
+  }
+
+  if (loadState.status === "awaiting-download") {
+    return (
+      <div className="app">
+        <div className="download-prompt">
+          <p className="empty">辞書データをダウンロードします。</p>
+          <button
+            type="button"
+            className="download-start-button"
+            onClick={() => loadDictionaryRef.current()}
+          >
+            ダウンロード開始
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
