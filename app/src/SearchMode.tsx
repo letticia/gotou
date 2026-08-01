@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
 import type { DictionaryDb } from "./lib/db";
 import {
-  getDictionaryBytes,
-  hasCachedDictionary,
   hasCachedLiveDictionary,
   readCachedLiveDictionaryBytes,
   storeLiveDictionaryBytes,
@@ -13,20 +11,9 @@ import {
   acquisitionProgressText,
 } from "./lib/dictionaryAcquisition";
 import type { AcquisitionProgress } from "./lib/dictionaryAcquisition";
-import { formatBytes } from "./lib/formatBytes";
 import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
-
-// 開発時はscripts/build-dummy-db.mjsが生成するダミーDBを指す。
-// 実データ配信サーバーのURLは別途決定する(docs/handoff.md参照)。
-const MANIFEST_URL = `${import.meta.env.BASE_URL}dictionary-manifest.json`;
-
-// "static"(既定): 従来通り静的なdictionary.sqlite3/manifestをダウンロードする
-//   (dev/test/CI/公開Pagesは常にこちら)。
-// "live": アプリ自身が浄土宗大辞典に直接アクセスし、その場で変換する
-//   (開発者本人がローカルで意図的にビルドする場合のみ想定。公開デプロイには使わない)。
-const DICTIONARY_SOURCE = import.meta.env.VITE_DICTIONARY_SOURCE === "live" ? "live" : "static";
 
 type LoadState =
   | { status: "checking" }
@@ -35,8 +22,7 @@ type LoadState =
   | { status: "not-installed" }
   // インストール済みだが未ダウンロード。ユーザーの明示的なボタン操作を待つ
   | { status: "awaiting-download" }
-  | { status: "downloading"; receivedBytes: number; totalBytes: number }
-  // "live"取得元でのダウンロード中(フェーズごとの進捗)
+  // 浄土宗大辞典への取得・変換中(フェーズごとの進捗)
   | { status: "acquiring"; progress: AcquisitionProgress }
   | { status: "ready" }
   | { status: "error"; message: string };
@@ -62,16 +48,6 @@ export default function SearchMode() {
       }
       setDb(opened);
       setLoadState({ status: "ready" });
-    }
-
-    async function loadStaticDictionary() {
-      setLoadState({ status: "checking" });
-      const { bytes } = await getDictionaryBytes(MANIFEST_URL, (receivedBytes, totalBytes) => {
-        if (!cancelled) {
-          setLoadState({ status: "downloading", receivedBytes, totalBytes });
-        }
-      });
-      await openAndFinish(bytes);
     }
 
     async function acquireLiveDictionary() {
@@ -104,7 +80,7 @@ export default function SearchMode() {
 
     if (!isStandalonePwa()) {
       setLoadState({ status: "not-installed" });
-    } else if (DICTIONARY_SOURCE === "live") {
+    } else {
       hasCachedLiveDictionary()
         .then((cached) => {
           if (cancelled) return;
@@ -116,18 +92,6 @@ export default function SearchMode() {
         })
         .catch(handleError);
       loadDictionaryRef.current = () => acquireLiveDictionary().catch(handleError);
-    } else {
-      hasCachedDictionary()
-        .then((cached) => {
-          if (cancelled) return;
-          if (cached) {
-            loadStaticDictionary().catch(handleError);
-          } else {
-            setLoadState({ status: "awaiting-download" });
-          }
-        })
-        .catch(handleError);
-      loadDictionaryRef.current = () => loadStaticDictionary().catch(handleError);
     }
 
     return () => {
@@ -222,22 +186,6 @@ export default function SearchMode() {
         className="search-input"
       />
       {loadState.status === "checking" && <p className="empty">辞書データを確認中…</p>}
-      {loadState.status === "downloading" && (
-        <div className="download-progress">
-          <progress
-            className="download-progress-bar"
-            value={loadState.totalBytes > 0 ? loadState.receivedBytes : undefined}
-            max={loadState.totalBytes > 0 ? loadState.totalBytes : undefined}
-          />
-          <p className="empty">
-            辞書データをダウンロード中… {formatBytes(loadState.receivedBytes)}
-            {loadState.totalBytes > 0 &&
-              ` / ${formatBytes(loadState.totalBytes)} (${Math.round(
-                (loadState.receivedBytes / loadState.totalBytes) * 100,
-              )}%)`}
-          </p>
-        </div>
-      )}
       {loadState.status === "acquiring" && (
         <div className="download-progress">
           <p className="empty">{acquisitionProgressText(loadState.progress)}</p>
