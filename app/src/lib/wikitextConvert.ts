@@ -86,6 +86,7 @@ export function convertMediawikiTables(text: string): string {
     type Cell = [string, string, string]; // [tag, attr, content]
     const rows: Cell[][] = [];
     let currentRow: Cell[] = [];
+    let caption = "";
 
     for (const line of lines) {
       if (line === "|}" || line.startsWith("|}")) break;
@@ -94,6 +95,11 @@ export function convertMediawikiTables(text: string): string {
           rows.push(currentRow);
           currentRow = [];
         }
+        continue;
+      }
+      // |+ キャプション行(データセルとして誤解釈されないよう最優先で判定する)
+      if (line.startsWith("|+")) {
+        caption = line.slice(2).trim();
         continue;
       }
 
@@ -116,6 +122,9 @@ export function convertMediawikiTables(text: string): string {
     if (rows.length === 0) return "";
 
     const tableHtml = ['<table class="wikitable">'];
+    if (caption) {
+      tableHtml.push(`  <caption>${caption}</caption>`);
+    }
     for (const row of rows) {
       tableHtml.push("  <tr>");
       for (const [tag, attr, content] of row) {
@@ -126,7 +135,10 @@ export function convertMediawikiTables(text: string): string {
     }
     tableHtml.push("</table>");
 
-    return tableHtml.join("\n");
+    // 前後に空行を強制する: 直前直後に空行が無いwikitext(=有効だが一般的な書き方)でも
+    // 独立した段落として扱われるようにするため。空行が無いと、後段の段落化処理が
+    // 表全体を地の文と同じ1段落とみなし、表内部の改行まですべて<br/>に変換してしまう。
+    return `\n\n${tableHtml.join("\n")}\n\n`;
   });
 }
 
@@ -290,11 +302,13 @@ export function cleanWikitext(
   text = convertMediawikiTables(text);
 
   // 6. セクション見出し (== 見出し == -> <h2 class="dict-section-heading">...)
+  // 前後に空行を強制し、直前直後に空行が無いwikitextでも独立した段落として
+  // 扱われるようにする(表・水平線と同じ理由。詳細はconvertMediawikiTables参照)
   text = text.replace(/^(={2,4})\s*(.*?)\s*\1$/gm, (_m, eq: string, titleContent: string) => {
     const cleaned = titleContent.replace(/<[^>]+>/g, "").trim();
     const level = eq.length;
     const tag = `h${Math.min(level, 4)}`;
-    return `<${tag} class="dict-section-heading"><span class="no-dict-link">${cleaned}</span></${tag}>`;
+    return `\n\n<${tag} class="dict-section-heading"><span class="no-dict-link">${cleaned}</span></${tag}>\n\n`;
   });
 
   // 見出しブロック <h2>...</h2> をリンク変換から保護
@@ -306,7 +320,8 @@ export function cleanWikitext(
   });
 
   // 7. 水平線 (----) -> <hr class="section-divider"/>
-  text = text.replace(/^\s*----\s*$/gm, '<hr class="section-divider"/>');
+  // 前後に空行を強制する(表・見出しと同じ理由)
+  text = text.replace(/^\s*----\s*$/gm, '\n\n<hr class="section-divider"/>\n\n');
 
   // 8. 外部リンク [http://... 表示テキスト]
   text = text.replace(

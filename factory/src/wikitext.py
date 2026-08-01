@@ -66,6 +66,7 @@ def convert_mediawiki_tables(text):
 
         rows = []
         current_row = []
+        caption = ""
 
         for line in lines:
             if line == "|}" or line.startswith("|}"):
@@ -74,6 +75,10 @@ def convert_mediawiki_tables(text):
                 if current_row:
                     rows.append(current_row)
                     current_row = []
+                continue
+            # |+ キャプション行(データセルとして誤解釈されないよう最優先で判定する)
+            if line.startswith("|+"):
+                caption = line[2:].strip()
                 continue
 
             if line.startswith("!"):
@@ -94,6 +99,8 @@ def convert_mediawiki_tables(text):
             return ""
 
         table_html = ['<table class="wikitable">']
+        if caption:
+            table_html.append(f'  <caption>{caption}</caption>')
         for row in rows:
             table_html.append('  <tr>')
             for tag, attr, content in row:
@@ -102,7 +109,10 @@ def convert_mediawiki_tables(text):
             table_html.append('  </tr>')
         table_html.append('</table>')
 
-        return "\n".join(table_html)
+        # 前後に空行を強制する: 直前直後に空行が無いwikitext(=有効だが一般的な書き方)でも
+        # 独立した段落として扱われるようにするため。空行が無いと、後段の段落化処理が
+        # 表全体を地の文と同じ1段落とみなし、表内部の改行まですべて<br/>に変換してしまう。
+        return "\n\n" + "\n".join(table_html) + "\n\n"
 
     return re.sub(r'(\{\|.*?\|\})', replace_table, text, flags=re.DOTALL)
 
@@ -242,13 +252,15 @@ def clean_wikitext(text, title_to_id_map, link_sink=None, broken_link_sink=None)
     text = convert_mediawiki_tables(text)
 
     # 6. セクション見出し (== 見出し == -> <h2 class="dict-section-heading"><span class="no-dict-link">見出し</span></h2>)
+    # 前後に空行を強制し、直前直後に空行が無いwikitextでも独立した段落として
+    # 扱われるようにする(表・水平線と同じ理由。詳細はconvert_mediawiki_tables参照)
     def replace_heading(m):
         eq = m.group(1)
         title_content = m.group(2).strip()
         title_content = re.sub(r'<[^>]+>', '', title_content).strip()
         level = len(eq)
         tag = f"h{min(level, 4)}"
-        return f'<{tag} class="dict-section-heading"><span class="no-dict-link">{title_content}</span></{tag}>'
+        return f'\n\n<{tag} class="dict-section-heading"><span class="no-dict-link">{title_content}</span></{tag}>\n\n'
 
     text = re.sub(r'^(={2,4})\s*(.*?)\s*\1$', replace_heading, text, flags=re.MULTILINE)
 
@@ -263,7 +275,8 @@ def clean_wikitext(text, title_to_id_map, link_sink=None, broken_link_sink=None)
     text = re.sub(r'<h[2-4]\b[^>]*>.*?</h[2-4]>', protect_headings, text, flags=re.DOTALL)
 
     # 7. 水平線 (----) -> <hr class="section-divider"/>
-    text = re.sub(r'^\s*----\s*$', '<hr class="section-divider"/>', text, flags=re.MULTILINE)
+    # 前後に空行を強制する(表・見出しと同じ理由)
+    text = re.sub(r'^\s*----\s*$', '\n\n<hr class="section-divider"/>\n\n', text, flags=re.MULTILINE)
 
     # 8. 外部リンク [http://... 表示テキスト]
     def replace_ext_link_text(m):

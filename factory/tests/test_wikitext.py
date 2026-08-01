@@ -40,6 +40,42 @@ def test_clean_wikitext_table():
     assert "<th>A</th>" in html
     assert "<td>1</td>" in html
 
+def test_clean_wikitext_table_caption():
+    """|+ キャプション行がデータセルとして誤解釈されず<caption>になること"""
+    html = wikitext.clean_wikitext(
+        '=よみ／タイトル=\n{|class="wikitable"\n|+ 表題\n! A\n|-\n| 1\n|}', {}
+    )
+    assert "<caption>表題</caption>" in html
+    assert "<th>A</th>" in html
+    assert "<td>1</td>" in html
+    # キャプションが余分なセルとしてヘッダー行に混入していないこと
+    assert html.count("<th>") == 1
+
+def test_clean_wikitext_table_without_blank_line_before():
+    """表の直前に空行が無くても、地の文と混じって<br/>が挿入されないこと"""
+    html = wikitext.clean_wikitext(
+        '=よみ／タイトル=\n本文の続き。\n{|class="wikitable"\n! A\n|-\n| 1\n|}', {}
+    )
+    assert "<br/>" not in html
+    assert html.startswith("<p>本文の続き。</p>")
+    assert '<table class="wikitable">' in html
+
+def test_clean_wikitext_heading_without_blank_line_before():
+    """見出しの直前に空行が無くても、地の文と混じって<br/>が挿入されないこと"""
+    html = wikitext.clean_wikitext("=よみ／タイトル=\n本文\n== 見出し ==\n続き", {})
+    assert "<br/>" not in html
+    assert html == (
+        "<p>本文</p>"
+        '<h2 class="dict-section-heading"><span class="no-dict-link">見出し</span></h2>'
+        "<p>続き</p>"
+    )
+
+def test_clean_wikitext_hr_without_blank_line_before():
+    """水平線の直前に空行が無くても、地の文と混じって<br/>が挿入されないこと"""
+    html = wikitext.clean_wikitext("=よみ／タイトル=\n本文\n----\n続き", {})
+    assert "<br/>" not in html
+    assert html == '<p>本文</p><hr class="section-divider"/><p>続き</p>'
+
 def test_clean_wikitext_lists():
     html = wikitext.clean_wikitext("=よみ／タイトル=\n* 一\n* 二", {})
     assert "<ul>" in html

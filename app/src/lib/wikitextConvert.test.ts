@@ -121,6 +121,54 @@ describe("cleanWikitext", () => {
     );
   });
 
+  it("converts a table caption (|+) instead of misreading it as a data cell", () => {
+    const wikitext = "{|\n|+ 表題\n! 見出しA\n|-\n| セルA\n|}";
+    const html = cleanWikitext(wikitext, emptyMap);
+    expect(html).toBe(
+      '<table class="wikitable">\n' +
+        "  <caption>表題</caption>\n" +
+        "  <tr>\n" +
+        "    <th>見出しA</th>\n" +
+        "  </tr>\n" +
+        "  <tr>\n" +
+        "    <td>セルA</td>\n" +
+        "  </tr>\n" +
+        "</table>",
+    );
+  });
+
+  it("keeps a table as its own block even when not preceded by a blank line (no stray <br/> from merging with the preceding prose)", () => {
+    const wikitext = "本文の続き。\n{|\n! 見出しA\n|-\n| セルA\n|}";
+    const html = cleanWikitext(wikitext, emptyMap);
+    expect(html).toBe(
+      "<p>本文の続き。</p>" +
+        '<table class="wikitable">\n' +
+        "  <tr>\n" +
+        "    <th>見出しA</th>\n" +
+        "  </tr>\n" +
+        "  <tr>\n" +
+        "    <td>セルA</td>\n" +
+        "  </tr>\n" +
+        "</table>",
+    );
+  });
+
+  it("keeps a heading as its own block even when not preceded by a blank line", () => {
+    const html = cleanWikitext("本文\n== 見出し ==\n続きの本文", emptyMap);
+    expect(html).toBe(
+      "<p>本文</p>" +
+        '<h2 class="dict-section-heading"><span class="no-dict-link">見出し</span></h2>' +
+        "<p>続きの本文</p>",
+    );
+  });
+
+  it("keeps a horizontal rule as its own block even when not preceded by a blank line", () => {
+    const html = cleanWikitext("本文\n----\n続きの本文", emptyMap);
+    expect(html).toBe(
+      '<p>本文</p><hr class="section-divider"/><p>続きの本文</p>',
+    );
+  });
+
   it("converts an image reference with a caption, without wrapping it in a paragraph", () => {
     const html = cleanWikitext("[[File:test.jpg|thumb|キャプション]]", emptyMap);
     expect(html).toBe(
