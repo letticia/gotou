@@ -204,16 +204,30 @@ body {
 
 .shell-gongyo {
   background: #000;
-  min-height: 100vh;
+  /* 勤行モードはページ全体をスクロールさせず、バナー・タブを除いた残りの領域に
+     ぴったり収める。100vhから固定値を引く方式だと、プロトタイプ注記バナーの高さが
+     画面幅で変わる(狭い画面では3行になる)ぶんだけはみ出し、カウンターや
+     「おつとめ、終わりです」が画面外に押し出されてしまう。 */
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .shell-gongyo .mode-tabs {
   max-width: none;
   padding: 0.75rem;
+  /* .shell-gongyoを縦flexにしたため、.mode-tabsの`margin: 0 auto`が
+     交差軸のstretchを打ち消してタブが内容幅まで縮む。幅を明示して元の見た目を保つ */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .gongyo {
-  min-height: calc(100vh - 3.5rem);
+  /* .shell-gongyo(縦flex)の残り領域を占める。min-height:0が無いと
+     内容の大きさで押し広げられ、はみ出した分が画面外に出る */
+  flex: 1;
+  min-height: 0;
   background: #000;
   color: #fff;
   display: flex;
@@ -244,6 +258,7 @@ body {
 
 .gongyo-body {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -345,13 +360,92 @@ body {
   margin-left: auto;
 }
 
-.gongyo-position {
+.gongyo-orientation-toggle {
+  background: none;
+  border: 1px solid #444;
+  border-radius: 0.25rem;
+  color: #aaa;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+  /* 「← 前へ」と隣接したときに押し間違えないよう間隔を空ける */
   margin-left: 1rem;
 }
 
+/* --- 縦書き(経本)表示 ---
+   writing-mode は .gongyo-body ではなく .gongyo-lines にだけ掛ける。
+   こうするとカウンターや「おつとめ、終わりです」は横書きのまま保たれる
+   (縦書き文脈に置くと数字が横倒しになるため)。 */
+.gongyo-vertical .gongyo-body {
+  align-items: stretch;
+  /* 横書きの左マージンに相当する余白を右側に取る(経本は右から始まる) */
+  padding: 1.5rem 2rem 1.5rem 1.5rem;
+}
+
+.gongyo-vertical .gongyo-lines {
+  writing-mode: vertical-rl;
+  /* 列が画面の高さいっぱいを使えるようにする(min-height:0が無いと
+     長い行の内容で押し広げられ、カウンターが下へ押し出される) */
+  flex: 1;
+  min-height: 0;
+  /* 1列目を右端から始める(経本の行送り) */
+  justify-content: flex-start;
+  /* 各列を画面の高さいっぱいに伸ばす。flex-startにすると行の高さが内容なりになり、
+     一枚起請文のような長い行(114字)が折り返さずに画面外へ突き抜けてしまう。
+     stretchなら高さで折り返して左隣の列へ続く(短い行は上から始まる点は変わらない)。 */
+  align-items: stretch;
+}
+
+/* 縦書きの字送りは段階(tier)ではなく画面の実寸から決める。
+   字数から段階を決め打ちすると、375px幅に合わせた閾値が360px幅の端末で
+   はみ出す、という具合に端末ごとに破綻するため。
+   --gongyo-columns(列数)と --gongyo-max-chars(1列に必要な字数)はGongyoMode.tsxが渡す。
+
+   ・上限3rem: 横書きの最大と揃える
+   ・横幅の制約: 列の間隔を差し引いた幅を列数で割り、1列の幅(本文1.4em + ルビ0.48em)で割る
+   ・高さの制約: 1行が1列に収まる字送り
+   ・下限1.2rem: これ以上小さくしない。一枚起請文(114字)のような長文を1列に
+     押し込もうとすると数pxまで縮んで読めなくなるため、下限で止めて
+     左隣の列へ折り返させる(折り返しは.gongyo-linesのalign-items:stretchによる)。 */
+.gongyo-vertical .gongyo-line {
+  font-size: min(
+    3rem,
+    /* 横幅の制約には下限を設けない。列数は必ず画面幅に収める必要があるため
+       (下限を設けると狭い端末で列がはみ出す) */
+    calc(
+      (100vw - 3.5rem - 0.6rem * (var(--gongyo-columns, 1) - 1)) /
+      var(--gongyo-columns, 1) / 2.1
+    ),
+    /* 高さの制約にだけ下限を設ける。一枚起請文(114字)のような長文を1列に
+       押し込もうとすると数pxまで縮んで読めなくなるため、下限で止めて
+       左隣の列へ折り返させる(折り返しは.gongyo-linesのalign-items:stretchによる) */
+    max(1.2rem, calc((100dvh - 16rem) / var(--gongyo-max-chars, 1)))
+  );
+}
+
+/* 本文とルビを行のfont-sizeからの相対にして、列の幅が字送りに比例するようにする
+   (上のcalcの係数2.1がそのまま成り立つ) */
+.gongyo-vertical .gongyo-line .gongyo-text {
+  font-size: 1em;
+}
+
+.gongyo-vertical .gongyo-line .gongyo-ruby {
+  font-size: 0.4em;
+}
+
+/* エコー行は本文より一段小さくして、続きの目印であることを見た目でも区別する */
+.gongyo-vertical .gongyo-line-dimmed {
+  font-size: max(0.9rem, min(1.6rem, calc((100dvh - 16rem) / var(--gongyo-max-chars, 1))));
+}
+
+
 .preset-picker,
 .preset-editor {
-  min-height: calc(100vh - 3.5rem);
+  /* 勤行モードのシェルはページスクロールしないため、一覧が長い場合は
+     こちらの内部でスクロールさせる */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   background: #000;
   color: #fff;
   padding: 1rem 1.5rem 2rem;

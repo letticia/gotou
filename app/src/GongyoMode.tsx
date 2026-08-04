@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   buildPages,
-  lineSizeTier,
-  paginatedSizeTier,
+  firstPageIndexOfItem,
   loadGongyoPresets,
   loadGongyoUnits,
   resolveDisplayRuby,
+  sizeTierFor,
+  verticalMaxLineLength,
 } from "./lib/gongyo";
 import type { GongyoPreset } from "./lib/gongyo";
+import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
 import {
@@ -71,6 +73,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   const [presetId, setPresetId] = useState<string>(() => loadLastPresetId() ?? DEFAULT_PRESET_ID);
   const [view, setView] = useState<View>({ name: "reciting" });
   const [introShown, setIntroShown] = useState(false);
+  const [orientation, setOrientation] = useState(() => loadOrientation());
 
   // 共有URLを開いた直後に取り込み確認画面へ遷移する
   useEffect(() => {
@@ -86,13 +89,27 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   }, [userPresets]);
 
   const preset = userPresetsById.get(presetId) ?? builtinPresetsById.get(presetId) ?? null;
-  const pages = useMemo(() => (preset ? buildPages(preset, unitsById) : []), [preset, unitsById]);
+  // 縦書きと横書きでは1タップで進む行数が異なるため、向きが変わるとページ構成も変わる
+  const pages = useMemo(
+    () => (preset ? buildPages(preset, unitsById, orientation) : []),
+    [preset, unitsById, orientation],
+  );
 
   const [nav, setNav] = useState<GongyoNavState>(() => initState(pages));
+  // 縦横の切り替え時に、戻り先として覚えておく差定内の位置(向き変更でページ番号が変わるため)
+  const restoreItemIndexRef = useRef<number | null>(null);
 
-  // プリセット切り替え時に読書位置をリセットする
+  // プリセット切り替え時に読書位置をリセットする。
+  // ただし向きの切り替えでpagesが作り直された場合は、読誦中の偈文の先頭に留まる。
   useEffect(() => {
-    setNav(initState(pages));
+    const restoreItemIndex = restoreItemIndexRef.current;
+    restoreItemIndexRef.current = null;
+    setNav(
+      initState(
+        pages,
+        restoreItemIndex === null ? 0 : firstPageIndexOfItem(pages, restoreItemIndex),
+      ),
+    );
   }, [pages]);
 
   useWakeLock(view.name === "reciting" && pages.length > 0);
@@ -229,6 +246,17 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     setView({ name: "picker" });
   }
 
+  // ページ送りのタップ(gongyo全体のonClick)と混ざらないよう伝播を止める
+  function handleToggleOrientation(event: React.MouseEvent) {
+    event.stopPropagation();
+    // 向きが変わると1タップで進む行数が変わりページ番号がずれるため、
+    // 読誦中の偈文を覚えておき、切り替え後はその先頭から続けられるようにする
+    restoreItemIndexRef.current = pages[nav.pageIndex]?.itemIndex ?? null;
+    const next = toggleOrientation(orientation);
+    setOrientation(next);
+    saveOrientation(next);
+  }
+
   if (!introShown) {
     return (
       <div className="gongyo gongyo-intro" onClick={() => setIntroShown(true)}>
@@ -246,7 +274,18 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
 
   const page = pages[nav.pageIndex];
   const isFinished = nav.pageIndex === pages.length - 1 && (nav.counterRemaining ?? 0) === 0;
-  const sizeTier = page.paginated ? paginatedSizeTier(page.lines) : lineSizeTier(page.lines.length);
+  // 横書きは字数から決めた段階クラスで、縦書きは列数と必要字数をCSSへ渡して
+  // min()に実寸から決めさせる(端末幅ごとの閾値調整が要らなくなる)
+  const isVertical = orientation === "vertical";
+  const linesClassName = isVertical
+    ? "gongyo-lines"
+    : `gongyo-lines gongyo-lines-size-${sizeTierFor(page)}`;
+  const linesStyle = isVertical
+    ? ({
+        "--gongyo-columns": page.lines.length,
+        "--gongyo-max-chars": Math.ceil(verticalMaxLineLength(page.lines)),
+      } as React.CSSProperties)
+    : undefined;
 
   function handleTap() {
     setNav((prev) => advance(prev, pages));
@@ -258,13 +297,21 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   }
 
   return (
-    <div className="gongyo" onClick={handleTap}>
+    <div className={`gongyo gongyo-${orientation}`} onClick={handleTap}>
       <div className="gongyo-header">
         {nav.pageIndex > 0 && (
           <button type="button" className="gongyo-back" onClick={handleBack}>
             ← 前へ
           </button>
         )}
+        <button
+          type="button"
+          className="gongyo-orientation-toggle"
+          onClick={handleToggleOrientation}
+          aria-label={orientation === "vertical" ? "横書きに切り替え" : "縦書きに切り替え"}
+        >
+          {orientation === "vertical" ? "横書き" : "縦書き"}
+        </button>
         <button type="button" className="gongyo-preset-select" onClick={handleOpenPicker}>
           差定を選ぶ
         </button>
@@ -277,7 +324,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
         <span className="gongyo-unit-title">{page.unitTitle}</span>
       </div>
       <div className="gongyo-body">
-        <div className={`gongyo-lines gongyo-lines-size-${sizeTier}`}>
+        <div className={linesClassName} style={linesStyle}>
           {page.lines.map((line, index) => {
             const ruby = index === 0 ? resolveDisplayRuby(page, nav.counterRemaining) : line.ruby;
             return (
