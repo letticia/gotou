@@ -6,8 +6,13 @@ import {
   paginatedBatchSize,
   paginatedSizeTier,
   resolveDisplayRuby,
+  pairShortBodyItems,
+  splitAtPunctuation,
+  splitLongBodyItems,
+  verticalColumnCount,
   verticalMaxLineLength,
   verticalPaginatedBatchSize,
+  VERTICAL_MAX_CHARS_PER_LINE,
 } from "./gongyo";
 import type { GongyoPage, GongyoPageLine, GongyoPreset, GongyoUnit } from "./gongyo";
 
@@ -250,8 +255,13 @@ describe("verticalMaxLineLength", () => {
   });
 
   it("counts ruby at 0.4x, since ruby runs along the same (vertical) axis as the text", () => {
-    // 本文4字・ルビ40字 -> 実効16字ぶんの高さが要る
+    // 本文4字・ルビ40字 -> 実効16字ぶん。20字以内なので1列に収まる
     expect(verticalMaxLineLength([{ text: "あああ あ".slice(0, 4), ruby: "ん".repeat(40) }])).toBe(16);
+  });
+
+  it("divides a long line by the columns it wraps into, so the font stays readable", () => {
+    // 41字は3列に折り返るので、1列あたりは14字ぶんの高さで足りる
+    expect(verticalMaxLineLength([{ text: "あ".repeat(41) }])).toBe(14);
   });
 
   it("ignores the dimmed echo line", () => {
@@ -392,5 +402,84 @@ describe("paginatedBatchSize", () => {
   it("returns 3 when the longest line exceeds 20 characters", () => {
     expect(paginatedBatchSize(unitWithMaxLength(21))).toBe(3);
     expect(paginatedBatchSize(unitWithMaxLength(114))).toBe(3);
+  });
+});
+
+describe("pairShortBodyItems", () => {
+  it("joins consecutive short phrases with a full-width space (四誓偈: 5 chars per phrase)", () => {
+    const body = [
+      { text: "我建超世願", ruby: "がごんちょうせいがん" },
+      { text: "必至無上道", ruby: "ひっしむじょうどう" },
+    ];
+    expect(pairShortBodyItems(body)).toEqual([
+      { text: "我建超世願　必至無上道", ruby: "がごんちょうせいがん　ひっしむじょうどう" },
+    ]);
+  });
+
+  it("keeps the last phrase on its own when the count is odd", () => {
+    const body = [{ text: "一" }, { text: "二" }, { text: "三" }];
+    expect(pairShortBodyItems(body).map((b) => b.text)).toEqual(["一　二", "三"]);
+  });
+
+  it("leaves a unit alone when any phrase is long enough to fill a column (敬禮六位: 9 chars)", () => {
+    const body = [{ text: "あ".repeat(9) }, { text: "い".repeat(9) }];
+    expect(pairShortBodyItems(body)).toEqual(body);
+  });
+
+  it("leaves counter units alone, since merging would break the per-count ruby overrides (十念)", () => {
+    const body = [{ text: "南無阿弥陀仏", counterRubyOverrides: { 2: "なむあみだぶつ" } }];
+    expect(pairShortBodyItems(body)).toEqual(body);
+  });
+});
+
+describe("splitAtPunctuation", () => {
+  it("cuts just after a punctuation mark so the reading break stays natural", () => {
+    expect(splitAtPunctuation("あああ、いいい。ううう", 8)).toEqual(["あああ、いいい。", "ううう"]);
+  });
+
+  it("falls back to a hard cut when punctuation would leave a very short chunk", () => {
+    expect(splitAtPunctuation("あ、" + "い".repeat(20), 8)).toEqual([
+      "あ、いいいいいい",
+      "いいいいいいいい",
+      "いいいいいい",
+    ]);
+  });
+
+  it("returns the text as-is when it already fits", () => {
+    expect(splitAtPunctuation("みじかい", 8)).toEqual(["みじかい"]);
+  });
+});
+
+describe("splitLongBodyItems", () => {
+  it("splits a phrase longer than the per-page limit (一枚起請文の114字)", () => {
+    const long = "あ".repeat(VERTICAL_MAX_CHARS_PER_LINE + 20);
+    const out = splitLongBodyItems([{ text: long }]);
+    expect(out).toHaveLength(2);
+    expect(out.map((b) => b.text).join("")).toBe(long);
+    expect(out[0].text.length).toBeLessThanOrEqual(VERTICAL_MAX_CHARS_PER_LINE);
+  });
+
+  it("does not split a phrase that carries ruby, since the ruby cannot be split to match", () => {
+    const item = { text: "あ".repeat(100), ruby: "い".repeat(100) };
+    expect(splitLongBodyItems([item])).toEqual([item]);
+  });
+});
+
+describe("verticalColumnCount", () => {
+  it("counts one column per short line", () => {
+    expect(verticalColumnCount([{ text: "あ".repeat(5) }, { text: "い".repeat(5) }])).toBe(2);
+  });
+
+  it("counts the extra columns a long line wraps into", () => {
+    // 41字は1列(20字)に収まらないので3列ぶんと数える
+    expect(verticalColumnCount([{ text: "あ".repeat(41) }])).toBe(3);
+  });
+
+  it("counts a line that fits one column as a single column (四奉請の16字)", () => {
+    expect(verticalColumnCount([{ text: "あ".repeat(16), ruby: "ん".repeat(28) }])).toBe(1);
+  });
+
+  it("never returns 0, so it is safe as a divisor in CSS", () => {
+    expect(verticalColumnCount([])).toBe(1);
   });
 });

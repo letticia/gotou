@@ -6,6 +6,7 @@ import {
   loadGongyoUnits,
   resolveDisplayRuby,
   sizeTierFor,
+  verticalColumnCount,
   verticalMaxLineLength,
 } from "./lib/gongyo";
 import type { GongyoPreset } from "./lib/gongyo";
@@ -282,7 +283,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     : `gongyo-lines gongyo-lines-size-${sizeTierFor(page)}`;
   const linesStyle = isVertical
     ? ({
-        "--gongyo-columns": page.lines.length,
+        "--gongyo-columns": verticalColumnCount(page.lines),
         "--gongyo-max-chars": Math.ceil(verticalMaxLineLength(page.lines)),
       } as React.CSSProperties)
     : undefined;

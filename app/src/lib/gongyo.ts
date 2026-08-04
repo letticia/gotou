@@ -125,18 +125,21 @@ export function buildPages(
     const unit = unitsById.get(item.unit);
     if (!unit) continue;
 
+    // 縦書きは短い句をまとめ、長すぎる句を分ける(unitのJSONは変えずここで組み替える)
+    const body = orientation === "vertical" ? verticalBody(unit.body) : unit.body;
+
     if (unit.paginated) {
-      const batchSize = batchSizeFor(unit, orientation);
-      for (let i = 0; i < unit.body.length; i += batchSize) {
+      const batchSize = batchSizeFor({ ...unit, body }, orientation);
+      for (let i = 0; i < body.length; i += batchSize) {
         const lines: GongyoPageLine[] = [];
         // バッチが1行のとき(一枚起請文のように1句が非常に長いunit)はエコーを出さない。
         // 1ページ=1句なのでエコーは句をまるごと二重に表示することになり、
         // 続きを示す役には立たないうえ表示領域を倍消費してしまう。
         if (i > 0 && batchSize > 1) {
-          const prev = unit.body[i - 1];
+          const prev = body[i - 1];
           lines.push({ text: prev.text, ruby: prev.ruby, dimmed: true });
         }
-        for (const b of unit.body.slice(i, i + batchSize)) {
+        for (const b of body.slice(i, i + batchSize)) {
           lines.push({ text: b.text, ruby: b.ruby });
         }
         pages.push({
@@ -153,10 +156,9 @@ export function buildPages(
         unitId: unit.id,
         itemIndex,
         unitTitle: unit.title,
-        lines: unit.body.map((b) => ({ text: b.text, ruby: b.ruby })),
+        lines: body.map((b) => ({ text: b.text, ruby: b.ruby })),
         counterTotal: item.counter,
-        counterRubyOverrides:
-          unit.body.length === 1 ? unit.body[0].counterRubyOverrides : undefined,
+        counterRubyOverrides: body.length === 1 ? body[0].counterRubyOverrides : undefined,
       });
     }
   }
@@ -212,16 +214,120 @@ export function paginatedSizeTier(lines: GongyoPageLine[]): 1 | 2 | 3 | 4 {
  * 本文が短くルビが極端に長い行(摂益文・破地獄偈等)で必要な高さを見誤らないための係数。 */
 const RUBY_TO_TEXT_RATIO = 0.4;
 
-/** 1列に必要な字数(=高さ方向の必要量)の最大値を返す。
- * ルビは本文の約0.4倍の字送りなので、本文字数とルビ字数×0.4の大きい方で評価する。
+/** 縦書きで1列に入る字数の目安。これを超える句は複数列に折り返す前提で列数を数える。
+ * 小さすぎる値にすると、実際には折り返さない句まで複数列と数えてしまい、
+ * そのぶん1列の幅を狭く見積もって字が不必要に小さくなる(四奉請の16字等)。
+ * 読みやすい字送りのとき1列に入る字数の実測(320〜375px幅で16〜19字)から20字とする。 */
+const VERTICAL_CHARS_PER_COLUMN = 20;
+
+/** 1句が何列まで折り返してよいか。これを超える長さの句はページを分ける。
+ * 列が増えるほど1列の幅が狭くなり字も小さくなるため、読める大きさを保つ上限。 */
+const VERTICAL_MAX_COLUMNS_PER_LINE = 3;
+
+/** 縦書きで1ページに載せる1句あたりの最大字数 */
+export const VERTICAL_MAX_CHARS_PER_LINE =
+  VERTICAL_CHARS_PER_COLUMN * VERTICAL_MAX_COLUMNS_PER_LINE;
+
+/** 2句を1列にまとめる対象とする字数の上限。5字前後の句を1句ずつ列にすると
+ * 縦書きでは列の下半分以上が空いてしまうため(四誓偈・摂益文等)。 */
+const VERTICAL_PAIR_MAX_LENGTH = 8;
+
+/** 行が高さ方向に必要とする字数(ルビが本文より長い場合はルビ換算で評価する) */
+function effectiveLineLength(line: GongyoPageLine): number {
+  return Math.max(line.text.length, (line.ruby?.length ?? 0) * RUBY_TO_TEXT_RATIO);
+}
+
+/** その行が折り返しで占める列数 */
+function columnsForLine(line: GongyoPageLine): number {
+  return Math.max(1, Math.ceil(effectiveLineLength(line) / VERTICAL_CHARS_PER_COLUMN));
+}
+
+/** ページ全体が占める列数(長い句が複数列に折り返すぶんも数える)。
+ * CSSはこの列数で1列あたりの幅を決めるため、折り返しを見込まないと字が大きくなりすぎる。 */
+export function verticalColumnCount(lines: GongyoPageLine[]): number {
+  return Math.max(
+    1,
+    lines.reduce((sum, line) => sum + columnsForLine(line), 0),
+  );
+}
+
+/** 1列に入る字数の最大値を返す(長い句は折り返す列数で割った値になる)。
  * エコー行(dimmed)は専用の小さいサイズで描かれるため対象外。
  * 0除算を避けるため最小値は1。 */
 export function verticalMaxLineLength(lines: GongyoPageLine[]): number {
   const visible = lines.filter((line) => !line.dimmed);
   return visible.reduce((max, line) => {
-    const effective = Math.max(line.text.length, (line.ruby?.length ?? 0) * RUBY_TO_TEXT_RATIO);
-    return Math.max(max, effective);
+    const perColumn = effectiveLineLength(line) / columnsForLine(line);
+    return Math.max(max, Math.ceil(perColumn));
   }, 1);
+}
+
+/** 縦書き向けにbodyを組み替える:
+ * 1. 短い句(VERTICAL_PAIR_MAX_LENGTH以下)ばかりのunitは2句ずつ全角スペースでつないで1列に収める
+ * 2. 長すぎる句は複数ページに分ける(句読点で切る)
+ * unitのJSONは書き換えず、表示時にここで組み替える。 */
+export function verticalBody(body: GongyoUnitBodyItem[]): GongyoUnitBodyItem[] {
+  return splitLongBodyItems(pairShortBodyItems(body));
+}
+
+/** すべての句が短いunitに限り、2句ずつ全角スペースでつないで1句にまとめる。
+ * 縦書きは1列に十数文字入るため、5字の句を1句ずつ列にすると列の大半が空き、
+ * そのぶん列数が増えて字も小さくなってしまう(四誓偈・摂益文等)。 */
+export function pairShortBodyItems(body: GongyoUnitBodyItem[]): GongyoUnitBodyItem[] {
+  if (body.length < 2) return body;
+  if (!body.every((item) => item.text.length <= VERTICAL_PAIR_MAX_LENGTH)) return body;
+  // 回数表示付きの句(十念等)は読みの上書きを持つため、まとめると対応が崩れる
+  if (body.some((item) => item.counterRubyOverrides)) return body;
+
+  const paired: GongyoUnitBodyItem[] = [];
+  for (let i = 0; i < body.length; i += 2) {
+    const first = body[i];
+    const second = body[i + 1];
+    if (!second) {
+      paired.push(first);
+      continue;
+    }
+    paired.push({
+      text: `${first.text}　${second.text}`,
+      ruby:
+        first.ruby || second.ruby ? `${first.ruby ?? ""}　${second.ruby ?? ""}` : undefined,
+    });
+  }
+  return paired;
+}
+
+/** 長すぎる句を複数の句に分ける(それぞれが別ページになる)。
+ * 1ページに全部載せようとすると字が極端に小さくなるため。
+ * 句読点の直後で切って、読み上げの区切りが不自然にならないようにする。
+ * ルビ付きの句は本文とルビの対応が崩れるため分割しない。 */
+export function splitLongBodyItems(body: GongyoUnitBodyItem[]): GongyoUnitBodyItem[] {
+  const out: GongyoUnitBodyItem[] = [];
+  for (const item of body) {
+    if (item.text.length <= VERTICAL_MAX_CHARS_PER_LINE || item.ruby) {
+      out.push(item);
+      continue;
+    }
+    for (const chunk of splitAtPunctuation(item.text, VERTICAL_MAX_CHARS_PER_LINE)) {
+      out.push({ text: chunk });
+    }
+  }
+  return out;
+}
+
+/** textをmaxLen以下の断片に分ける。maxLen以内の最後の句読点の直後で切り、
+ * 句読点が前半に寄りすぎている(=断片が極端に短くなる)場合はmaxLenで機械的に切る。 */
+export function splitAtPunctuation(text: string, maxLen: number): string[] {
+  const chunks: string[] = [];
+  let rest = text;
+  while (rest.length > maxLen) {
+    const window = rest.slice(0, maxLen);
+    const punctuation = Math.max(window.lastIndexOf("。"), window.lastIndexOf("、"));
+    const cut = punctuation >= Math.floor(maxLen / 2) ? punctuation + 1 : maxLen;
+    chunks.push(rest.slice(0, cut));
+    rest = rest.slice(cut);
+  }
+  if (rest) chunks.push(rest);
+  return chunks;
 }
 
 /** 差定内の指定位置(preset.itemsのindex)に対応する最初のページ番号を返す(無ければ0)。
