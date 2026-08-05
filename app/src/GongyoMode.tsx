@@ -9,7 +9,7 @@ import {
   verticalColumnCount,
   verticalMaxLineLength,
 } from "./lib/gongyo";
-import type { GongyoPreset } from "./lib/gongyo";
+import type { GongyoPage, GongyoPageLine, GongyoPreset } from "./lib/gongyo";
 import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
@@ -273,7 +273,11 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     );
   }
 
-  const page = pages[nav.pageIndex];
+  // 向き切り替え直後は、新しいpagesが確定した後の再描画1回だけ、まだ古い向きの
+  // nav.pageIndexが残っている(navを打ち直すuseEffectはこの描画の後にしか走らない)。
+  // ページ数が向きによって大きく変わるunit(阿弥陀如来根本陀羅尼・一枚起請文等)では
+  // 添字が新しいpagesの範囲外になり得るため、その1回の描画だけ安全にクランプする。
+  const page = pages[Math.min(nav.pageIndex, pages.length - 1)];
   const isFinished = nav.pageIndex === pages.length - 1 && (nav.counterRemaining ?? 0) === 0;
   // 横書きは字数から決めた段階クラスで、縦書きは列数と必要字数をCSSへ渡して
   // min()に実寸から決めさせる(端末幅ごとの閾値調整が要らなくなる)
@@ -283,8 +287,8 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     : `gongyo-lines gongyo-lines-size-${sizeTierFor(page)}`;
   const linesStyle = isVertical
     ? ({
-        "--gongyo-columns": verticalColumnCount(page.lines),
-        "--gongyo-max-chars": Math.ceil(verticalMaxLineLength(page.lines)),
+        "--gongyo-columns": page.verticalColumns ?? verticalColumnCount(page.lines),
+        "--gongyo-max-chars": Math.ceil(page.verticalMaxChars ?? verticalMaxLineLength(page.lines)),
       } as React.CSSProperties)
     : undefined;
 
@@ -296,6 +300,25 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
     event.stopPropagation();
     setNav((prev) => goBack(prev, pages));
   }
+
+  // エコー行(前ページ最終行の薄い表示)は経本の続きの目印として右端寄りに留め、
+  // 実際に読む本文だけを.gongyo-line-groupでまとめて中央揃えの対象にする(縦書き)。
+  function renderLine(line: GongyoPageLine, absoluteIndex: number) {
+    const ruby = absoluteIndex === 0 ? resolveDisplayRuby(page, nav.counterRemaining) : line.ruby;
+    return (
+      <div
+        key={absoluteIndex}
+        className={line.dimmed ? "gongyo-line gongyo-line-dimmed" : "gongyo-line"}
+      >
+        {ruby && <p className="gongyo-ruby">{ruby}</p>}
+        <p className="gongyo-text">{line.text}</p>
+      </div>
+    );
+  }
+
+  const hasEcho = page.lines[0]?.dimmed === true;
+  const echoLine = hasEcho ? page.lines[0] : undefined;
+  const bodyLines = hasEcho ? page.lines.slice(1) : page.lines;
 
   return (
     <div className={`gongyo gongyo-${orientation}`} onClick={handleTap}>
@@ -326,18 +349,16 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
       </div>
       <div className="gongyo-body">
         <div className={linesClassName} style={linesStyle}>
-          {page.lines.map((line, index) => {
-            const ruby = index === 0 ? resolveDisplayRuby(page, nav.counterRemaining) : line.ruby;
-            return (
-              <div
-                key={index}
-                className={line.dimmed ? "gongyo-line gongyo-line-dimmed" : "gongyo-line"}
-              >
-                {ruby && <p className="gongyo-ruby">{ruby}</p>}
-                <p className="gongyo-text">{line.text}</p>
+          {hasEcho ? (
+            <>
+              {renderLine(echoLine!, 0)}
+              <div className="gongyo-line-group">
+                {bodyLines.map((line, i) => renderLine(line, i + 1))}
               </div>
-            );
-          })}
+            </>
+          ) : (
+            bodyLines.map((line, i) => renderLine(line, i))
+          )}
         </div>
         {nav.counterRemaining !== null && (
           <p className="gongyo-counter">{nav.counterRemaining}</p>

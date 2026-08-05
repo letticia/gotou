@@ -310,13 +310,21 @@ body {
 .gongyo-labels {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 1rem;
   padding: 0 1.5rem;
   font-size: 0.75rem;
   color: #777;
 }
 
-.gongyo-lines {
+.gongyo-unit-title {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #e0a030;
+}
+
+.gongyo-lines,
+.gongyo-line-group {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -393,11 +401,24 @@ body {
      長い行の内容で押し広げられ、カウンターが下へ押し出される) */
   flex: 1;
   min-height: 0;
-  /* 1列目を右端から始める(経本の行送り) */
-  justify-content: flex-start;
+  /* 列数が画面幅を埋めきらないunit(三奉請・十念等)が右端に寄って
+     左側だけ大きく空くのを避けるため中央揃えにする。エコー行がある場合は
+     .gongyo-line-groupがflex:1で残り空間を占めるため、この値は実質無効になる。 */
+  justify-content: center;
   /* 各列を画面の高さいっぱいに伸ばす。flex-startにすると行の高さが内容なりになり、
      一枚起請文のような長い行(114字)が折り返さずに画面外へ突き抜けてしまう。
      stretchなら高さで折り返して左隣の列へ続く(短い行は上から始まる点は変わらない)。 */
+  align-items: stretch;
+}
+
+/* エコー行(前ページ最終行の薄い表示)がある場合、それ以外の本文だけをこのグループで
+   まとめて中央揃えする。エコー行自身は経本の続きの目印として右端寄りの位置に留める。
+   エコーが無いページではこのグループが実質全行を包むだけになり、
+   親.gongyo-linesのjustify-content:centerがそのまま効く。 */
+.gongyo-vertical .gongyo-line-group {
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
   align-items: stretch;
 }
 

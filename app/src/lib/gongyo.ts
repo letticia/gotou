@@ -55,6 +55,10 @@ export interface GongyoPage {
   paginated?: boolean;
   counterTotal?: number;
   counterRubyOverrides?: Record<number, string>;
+  /** 縦書き時の列数・1列の字数(同じitemIndexの全ページで統一済み)。
+   * horizontalでは未設定。unifyVerticalSizing参照 */
+  verticalColumns?: number;
+  verticalMaxChars?: number;
 }
 
 const unitModules = import.meta.glob<GongyoUnit>("../shared/gongyo/units/*.json", {
@@ -162,7 +166,28 @@ export function buildPages(
       });
     }
   }
+  if (orientation === "vertical") unifyVerticalSizing(pages);
   return pages;
+}
+
+/** 同じ差定項目(itemIndex)に属する全ページの縦書き字送りを、その中の最大値に統一する。
+ * ページごとに最適化すると、句の長さの差でページ送りのたびに字が大きくなったり
+ * 小さくなったりしてしまうため(阿弥陀如来根本陀羅尼・一枚起請文で顕著)、
+ * そのunit(1回の読誦)を通して固定した字送りにする。 */
+function unifyVerticalSizing(pages: GongyoPage[]): void {
+  const maxByItem = new Map<number, { columns: number; maxChars: number }>();
+  for (const page of pages) {
+    const current = maxByItem.get(page.itemIndex) ?? { columns: 1, maxChars: 1 };
+    maxByItem.set(page.itemIndex, {
+      columns: Math.max(current.columns, verticalColumnCount(page.lines)),
+      maxChars: Math.max(current.maxChars, verticalMaxLineLength(page.lines)),
+    });
+  }
+  for (const page of pages) {
+    const agg = maxByItem.get(page.itemIndex)!;
+    page.verticalColumns = agg.columns;
+    page.verticalMaxChars = agg.maxChars;
+  }
 }
 
 /** counterRemaining(残数)に応じた読みの上書きがあればそれを、無ければ最初の行の通常のrubyを返す。

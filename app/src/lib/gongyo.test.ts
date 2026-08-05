@@ -350,6 +350,89 @@ describe("buildPages with orientation", () => {
   });
 });
 
+describe("buildPages vertical sizing (unifyVerticalSizing)", () => {
+  // 句によって必要列数・字数が大きく異なるunit(阿弥陀如来根本陀羅尼・一枚起請文相当)。
+  // 短い句(10字・1列)と長い句(44字・3列に折り返る)の1句ずつのページに分かれる。
+  const varyingUnit: GongyoUnit = {
+    id: "unit-varylen",
+    title: "字数がばらつくユニット",
+    reading: "u",
+    paginated: true,
+    body: [{ text: "あ".repeat(10) }, { text: "い".repeat(44) }],
+  };
+  // もう一つ、別のばらつき方をする独立したunit(他項目への波及が無いことの確認用)
+  const varyingUnit2: GongyoUnit = {
+    id: "unit-varylen-2",
+    title: "別のばらつきユニット",
+    reading: "u2",
+    paginated: true,
+    body: [{ text: "う".repeat(8) }, { text: "え".repeat(25) }],
+  };
+  const map = new Map<string, GongyoUnit>([
+    ["unit-varylen", varyingUnit],
+    ["unit-varylen-2", varyingUnit2],
+  ]);
+
+  it("unifies columns/maxChars across pages of the same item to the max of each page's own value", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "n",
+      items: [{ unit: "unit-varylen" }],
+    };
+    const pages = buildPages(preset, map, "vertical");
+    expect(pages).toHaveLength(2);
+
+    const perPageColumns = pages.map((p) => verticalColumnCount(p.lines));
+    const perPageMaxChars = pages.map((p) => verticalMaxLineLength(p.lines));
+    // 単独計算では短い句のページの方が小さい値になる(=このテストの前提)
+    expect(perPageColumns[0]).toBeLessThan(perPageColumns[1]);
+    expect(perPageMaxChars[0]).toBeLessThan(perPageMaxChars[1]);
+
+    // 統一後は両ページとも、各ページ単独の最大値に揃っている
+    const expectedColumns = Math.max(...perPageColumns);
+    const expectedMaxChars = Math.max(...perPageMaxChars);
+    for (const page of pages) {
+      expect(page.verticalColumns).toBe(expectedColumns);
+      expect(page.verticalMaxChars).toBe(expectedMaxChars);
+    }
+  });
+
+  it("does not let one item's sizing leak into another item's pages", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "n",
+      items: [{ unit: "unit-varylen" }, { unit: "unit-varylen-2" }],
+    };
+    const pages = buildPages(preset, map, "vertical");
+    const item0Pages = pages.filter((p) => p.itemIndex === 0);
+    const item1Pages = pages.filter((p) => p.itemIndex === 1);
+    expect(item0Pages.length).toBeGreaterThan(0);
+    expect(item1Pages.length).toBeGreaterThan(0);
+
+    const item0Expected = Math.max(...item0Pages.map((p) => verticalColumnCount(p.lines)));
+    const item1Expected = Math.max(...item1Pages.map((p) => verticalColumnCount(p.lines)));
+    expect(item0Expected).not.toBe(item1Expected);
+    for (const page of item0Pages) expect(page.verticalColumns).toBe(item0Expected);
+    for (const page of item1Pages) expect(page.verticalColumns).toBe(item1Expected);
+  });
+
+  it("leaves verticalColumns/verticalMaxChars undefined in horizontal mode", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "n",
+      items: [{ unit: "unit-varylen" }],
+    };
+    const pages = buildPages(preset, map, "horizontal");
+    for (const page of pages) {
+      expect(page.verticalColumns).toBeUndefined();
+      expect(page.verticalMaxChars).toBeUndefined();
+    }
+  });
+});
+
 describe("firstPageIndexOfItem", () => {
   // 同じunit(junen)が差定に2回現れるケース。日常勤行式では十念が4回現れる。
   const pages: GongyoPage[] = [
