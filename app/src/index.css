@@ -234,6 +234,9 @@ body {
   flex-direction: column;
   cursor: pointer;
   user-select: none;
+  /* AndroidのChromeは既定でタップ位置に半透明の青いハイライトを一瞬表示する。
+     ページ送りのタップのたびにフラッシュして見えるため無効化する(#1)。 */
+  -webkit-tap-highlight-color: transparent;
 }
 
 .gongyo-header {
