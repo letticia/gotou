@@ -106,6 +106,15 @@
   dev/test/CI専用のダミーデータ生成として引き続き使われている。
 - **商標確認完了**: J-PlatPatで「語灯」の簡易検索(四法すべて)を実施、抵触なし
   (2026-07-31確認、開発者による)。
+- **フォント選択機能**: 辞書・勤行の本文にNoto Serif JP(既定)・Zen Old Mincho・
+  Klee Oneを選べるトグルを追加(アプリ全体・`localStorage`永続化)。3書体とも
+  `app/scripts/fetch-google-fonts.mjs`でGoogle Fontsから取得し`app/public/fonts/`に
+  自前ホスティング(オフラインファースト方針。実行時にfonts.googleapis.comへは
+  リンクしない)。GoogleがCJKフォントをUnicode範囲ごとに数十〜百数十枚のwoff2に
+  分割配信する仕組みをそのまま複製しており(3書体×Regular/Bold合計740ファイル・
+  約20MB)、自前ホスティングでも`unicode-range`を保持しているため、ブラウザは
+  実際に描画する文字のぶんだけ取得する。Service Worker(`sw.js`)の変更は不要
+  (既存の`cacheFirstRuntimeCache`が同一originの全GETに効くため)。
 
 ## 決定事項サマリ
 
@@ -225,3 +234,33 @@
   `flex-start`だと行の高さが内容なりになり、一枚起請文の114字が折り返さず
   画面外へ突き抜ける。またサイズの下限(`max()`)は高さの制約にだけ掛けること。
   幅の制約に下限を掛けると、狭い端末で列がはみ出す。
+- `.gongyo-body`が`align-items: flex-start`(内容に合わせて幅を決める)の状態で、
+  ネストしたflexコンテナに極端に長い1行(分割しない一枚起請文の114字等)が
+  混じると、折り返さずコンテナ幅を超えて広がることがある(横書きモードで発生)。
+  `.gongyo-lines`/`.gongyo-line-group`に`max-width: 100%`を明示して解決した。
+  この種の「shrink-to-fitの計算がおかしい」系の不具合は、ブラウザの表示スケールが
+  ずれて見える別の問題(下記)と紛らわしいので、`getBoundingClientRect()`で
+  本文幅とコンテナ幅を**比率で**比較して切り分けること(絶対値は環境依存でずれても、
+  本文がコンテナより広いという相対関係は変わらない)。
+- 横書きの`paginatedBatchSize`は句の長さに関わらず一律で「3句にまとめる」ため、
+  一枚起請文のように句ごとの文字数が大きく異なる(14字〜114字)unitでは、
+  3句分の折り返した本文が画面の高さを超えることがある。60字を超える句を持つ
+  unitは1句ずつに減らすことで解決(縦書き側は元々`verticalPaginatedBatchSize`で
+  同種の調整をしていたが、横書き側は未対応だった)。
+- ブラウザ操作ツール(`mcp__Claude_Browser__*`)は、`navigate`に`force: true`を
+  付けたり複数回`preview_start`/`preview_stop`を繰り返したりすると、
+  `resize_window`で設定したはずのモバイル幅(375x812)が反映されず
+  `window.innerWidth`が実際のペイン幅(705等)を返すことがある。測定前に
+  必ず`window.innerWidth`を確認し、ずれていたら`resize_window`をやり直すか
+  `force`無しで`navigate`し直すこと。
+- Reactの状態更新は、同一の`javascript_exec`スクリプト内で
+  `element.click()`した直後に`document.querySelector(...)`しても
+  まだ反映されていないことがある(React 18のイベントバッチング)。
+  クリックと検証は**別々の**`javascript_exec`呼び出しに分けること。
+- Google FontsのCJK書体(Noto Serif JP等)はUnicode範囲ごとに数十〜百数十個の
+  woff2に分割配信される。自前ホスティングする際も`unicode-range`をそのまま
+  保持すれば、ブラウザは実際に使う文字のサブセットだけを取得する
+  (=全ファイルを同時に読み込むわけではない)ため、全サブセットをまとめて
+  ダウンロード・コミットしても実運用の通信量は増えない。逆に「よく使う文字だけ
+  自分で見繕って絞る」方が、辞書本文にどんな文字が出てくるか事前に分からない
+  以上リスクが高い(Googleの分割をそのまま複製する方が安全)。

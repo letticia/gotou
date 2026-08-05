@@ -6,6 +6,7 @@
   "scripts": {
     "sync-shared": "node scripts/sync-shared.mjs",
     "build-dummy-db": "node scripts/build-dummy-db.mjs",
+    "fetch-fonts": "node scripts/fetch-google-fonts.mjs",
     "predev": "npm run sync-shared && npm run build-dummy-db",
     "dev": "vite",
     "prebuild": "npm run sync-shared && npm run build-dummy-db",

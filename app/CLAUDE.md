@@ -27,6 +27,25 @@ Web標準から外れる実装(プラグイン前提の機能)は避けるか、
 - 読書位置は**テキスト単位のアンカー**で保持する。回転・折り畳み開閉で位置をロストさせない。
 - ヒンジ対応(Viewport Segments)は深追いしない。
 
+## フォント
+
+- 辞書・勤行どちらの本文にも効く**フォント選択**(Noto Serif JP=既定・Zen Old Mincho・Klee One)を
+  実装済み。選択は`localStorage`(`gotou:font-choice`、`src/lib/fontChoice.ts`)に保存し、
+  `:root`の`--app-font-family`をApp.tsxが書き換えることで全体に反映する。
+- 3書体ともGoogle Fontsから`app/scripts/fetch-google-fonts.mjs`で取得し、
+  `app/public/fonts/`に**自前ホスティング**している(オフラインファースト方針のため、
+  実行時にfonts.googleapis.comへリンクしない)。取得済みのwoff2一式と
+  生成された`fonts.css`は通常のリポジトリ資産としてコミット済み(大辞典由来データではない)。
+- GoogleのCSSは文字のUnicode範囲ごとに数十〜百数十個の小さなwoff2に分割されており、
+  自前ホスティングでもその`unicode-range`をそのまま使うため、ブラウザは実際に
+  描画する文字のぶんだけ取得する(3書体×Regular/Bold合計740ファイル・約20MBだが、
+  一度に全部読み込むわけではない)。
+- Service Workerの変更は不要: `sw.js`の`cacheFirstRuntimeCache`(同一originのGETを
+  初回ネットワーク取得→以降キャッシュ)がフォントにもそのまま効くため、
+  実際に使われたサブセットは自動的にオフラインでも使えるようになる。
+- スクリプトの再実行(書体追加・更新)は`npm run fetch-fonts`(手動実行専用。
+  predev/prebuild/pretestには組み込まない)。
+
 ## 配布と計測
 
 - GitHub Pages にデプロイ(Actions)。ビルド成果物に辞書データを同梱しない。
