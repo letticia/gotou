@@ -90,12 +90,17 @@ export function loadGongyoPresets(): Map<string, GongyoPreset> {
 
 /** paginated unitの1行あたりの文字数に応じて、1タップで進む新規行数を決める。
  * 誦経(四誓偈・第九真身観文)のように1句が短いunitは高速に読誦するため多めの行数を、
- * 一枚起請文・陀羅尼のように1句が長いunitは従来通り少なめの行数にする。 */
+ * 一枚起請文・陀羅尼のように1句が長いunitは従来通り少なめの行数にする。
+ * 横書きは分割(verticalBodyのような句読点での分割)を行わないため、一枚起請文の
+ * 114字のような極端に長い句は3句まとめると画面の高さを超えてしまう。そのため
+ * 60字を超える句を持つunitは1句ずつに減らし、文字サイズの段階(paginatedSizeTier)
+ * だけでなく行数そのものを絞ることで画面に収める。 */
 export function paginatedBatchSize(unit: GongyoUnit): number {
   const maxLength = unit.body.reduce((max, b) => Math.max(max, b.text.length), 0);
   if (maxLength <= 10) return 6;
   if (maxLength <= 20) return 4;
-  return 3;
+  if (maxLength <= 60) return 3;
+  return 1;
 }
 
 /** 縦書きのバッチ行数。縦書きは1行が1列を占め、列の幅(=画面の横幅)が厳しい制約になる。

@@ -482,9 +482,16 @@ describe("paginatedBatchSize", () => {
     expect(paginatedBatchSize(unitWithMaxLength(20))).toBe(4);
   });
 
-  it("returns 3 when the longest line exceeds 20 characters", () => {
+  it("returns 3 when the longest line is 21-60 characters", () => {
     expect(paginatedBatchSize(unitWithMaxLength(21))).toBe(3);
-    expect(paginatedBatchSize(unitWithMaxLength(114))).toBe(3);
+    expect(paginatedBatchSize(unitWithMaxLength(60))).toBe(3);
+  });
+
+  it("returns 1 when the longest line exceeds 60 characters (avoids vertical overflow in horizontal mode)", () => {
+    // 一枚起請文の114字相当。横書きは句を分割しないため、3句まとめると
+    // 折り返した本文が画面の高さを超えてしまう(実機で確認済み)。1句ずつにする。
+    expect(paginatedBatchSize(unitWithMaxLength(61))).toBe(1);
+    expect(paginatedBatchSize(unitWithMaxLength(114))).toBe(1);
   });
 });
 

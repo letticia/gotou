@@ -328,6 +328,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  /* .gongyo-bodyがalign-items:flex-startのため、.gongyo-linesは幅を
+     内容に合わせて決める(shrink-to-fit)。この計算に非常に長い1句
+     (一枚起請文の114字等、横書きでは分割しない)が混じると、折り返さず
+     コンテナ幅を超えて広がってしまうことがあるため、上限を明示する。 */
+  max-width: 100%;
 }
 
 .gongyo-lines-size-1 .gongyo-line .gongyo-text {
