@@ -162,7 +162,9 @@ body {
   border: none;
   padding: 0;
   font: inherit;
-  color: #2980b9;
+  /* #2980b9は黒背景でのコントラスト比が約4.9:1と低く読みにくいため、
+     約8.5:1確保できる明るい青にする(#2)。 */
+  color: #5dade2;
   text-decoration: underline;
   cursor: pointer;
 }
