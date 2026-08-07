@@ -14,6 +14,13 @@ import type { AcquisitionProgress } from "./lib/dictionaryAcquisition";
 import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
+import {
+  FONT_SCALE_STEPS,
+  canDecrease,
+  canIncrease,
+  loadScaleIndex,
+  saveScaleIndex,
+} from "./lib/dictFontScale";
 
 type LoadState =
   | { status: "checking" }
@@ -38,6 +45,57 @@ export default function SearchMode() {
   const queryInputRef = useRef<HTMLInputElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
+  const [scaleIndex, setScaleIndex] = useState(() => loadScaleIndex());
+
+  // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
+  // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--dict-font-scale",
+      String(FONT_SCALE_STEPS[scaleIndex]),
+    );
+  }, [scaleIndex]);
+
+  function handleDecreaseFontScale() {
+    setScaleIndex((prev) => {
+      // disabled属性の再描画が間に合わない連続クリックでも配列の範囲外に
+      // ならないようclampする(disabledだけに頼らない)
+      const next = Math.max(0, prev - 1);
+      saveScaleIndex(next);
+      return next;
+    });
+  }
+
+  function handleIncreaseFontScale() {
+    setScaleIndex((prev) => {
+      const next = Math.min(FONT_SCALE_STEPS.length - 1, prev + 1);
+      saveScaleIndex(next);
+      return next;
+    });
+  }
+
+  const fontScaleRow = (
+    <div className="font-scale-row">
+      <button
+        type="button"
+        className="font-scale-button"
+        onClick={handleDecreaseFontScale}
+        disabled={!canDecrease(scaleIndex)}
+        aria-label="文字を小さく"
+      >
+        A-
+      </button>
+      <button
+        type="button"
+        className="font-scale-button"
+        onClick={handleIncreaseFontScale}
+        disabled={!canIncrease(scaleIndex)}
+        aria-label="文字を大きく"
+      >
+        A+
+      </button>
+    </div>
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +220,7 @@ export default function SearchMode() {
   if (loadState.status === "not-installed") {
     return (
       <div className="app">
+        {fontScaleRow}
         <p className="empty">
           このアプリをホーム画面に追加してからご利用ください。
           <br />
@@ -174,6 +233,7 @@ export default function SearchMode() {
   if (loadState.status === "awaiting-download") {
     return (
       <div className="app">
+        {fontScaleRow}
         <div className="download-prompt">
           <p className="empty">辞書データをダウンロードします。</p>
           <button
@@ -190,6 +250,7 @@ export default function SearchMode() {
 
   return (
     <div className="app">
+      {fontScaleRow}
       <div className="search-input-wrapper">
         <input
           ref={queryInputRef}
