@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
+import SettingsScreen from "./SettingsScreen";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
 import { useServiceWorkerUpdate } from "./useServiceWorkerUpdate";
 import type { FontChoice } from "./lib/fontChoice";
-import { FONT_LABELS, fontStackFor, loadFontChoice, saveFontChoice } from "./lib/fontChoice";
+import { fontStackFor, loadFontChoice, saveFontChoice } from "./lib/fontChoice";
 
 type Mode = "search" | "gongyo";
 
@@ -13,6 +14,7 @@ const FALLBACK_FONT_STACK = 'system-ui, -apple-system, "Hiragino Sans", sans-ser
 
 export default function App() {
   const [mode, setMode] = useState<Mode>("search");
+  const [showSettings, setShowSettings] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
   const { updateAvailable, applyUpdate } = useServiceWorkerUpdate();
@@ -42,7 +44,7 @@ export default function App() {
   }
 
   return (
-    <div className={mode === "gongyo" ? "shell shell-gongyo" : "shell"}>
+    <div className={mode === "gongyo" && !showSettings ? "shell shell-gongyo" : "shell"}>
       <div className="prototype-notice">
         これは開発中のプロトタイプです。浄土宗の公式アプリではありません。
       </div>
@@ -54,43 +56,49 @@ export default function App() {
           </button>
         </div>
       )}
-      <nav className="mode-tabs">
-        <button
-          type="button"
-          className={mode === "search" ? "active" : ""}
-          onClick={() => setMode("search")}
-        >
-          辞書
-        </button>
-        <button
-          type="button"
-          className={mode === "gongyo" ? "active" : ""}
-          onClick={() => setMode("gongyo")}
-        >
-          勤行
-        </button>
-      </nav>
-      <div className="font-choice-row">
-        <select
-          className="font-choice-select"
-          value={fontChoice}
-          onChange={(event) => handleFontChange(event.target.value as FontChoice)}
-          aria-label="フォントを選ぶ"
-        >
-          {(Object.keys(FONT_LABELS) as FontChoice[]).map((choice) => (
-            <option key={choice} value={choice}>
-              {FONT_LABELS[choice]}
-            </option>
-          ))}
-        </select>
-      </div>
-      {mode === "search" ? (
-        <SearchMode />
-      ) : (
-        <GongyoMode
-          pendingImport={pendingImport}
-          onImportHandled={() => setPendingImport(null)}
+      {showSettings ? (
+        <SettingsScreen
+          fontChoice={fontChoice}
+          onFontChange={handleFontChange}
+          onClose={() => setShowSettings(false)}
         />
+      ) : (
+        <>
+          <nav className="mode-tabs">
+            <button
+              type="button"
+              className={mode === "search" ? "active" : ""}
+              onClick={() => setMode("search")}
+            >
+              辞書
+            </button>
+            <button
+              type="button"
+              className={mode === "gongyo" ? "active" : ""}
+              onClick={() => setMode("gongyo")}
+            >
+              勤行
+            </button>
+          </nav>
+          <div className="settings-entry-row">
+            <button
+              type="button"
+              className="settings-gear-button"
+              onClick={() => setShowSettings(true)}
+              aria-label="設定"
+            >
+              ⚙
+            </button>
+          </div>
+          {mode === "search" ? (
+            <SearchMode />
+          ) : (
+            <GongyoMode
+              pendingImport={pendingImport}
+              onImportHandled={() => setPendingImport(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );
