@@ -16,12 +16,33 @@ body {
   padding: 1.5rem;
 }
 
+.search-input-wrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
 .search-input {
   width: 100%;
   box-sizing: border-box;
   font-size: 1.2rem;
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 1rem;
+  padding: 0.6rem 2.2rem 0.6rem 0.8rem;
+}
+
+.search-clear-button {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  transform: translateY(-50%);
+  width: 1.8rem;
+  height: 1.8rem;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .result-list {
@@ -299,9 +320,13 @@ body {
 }
 
 .gongyo-ruby {
-  color: #999;
+  /* #999は黒背景で控えめすぎて読みにくいため、本文(白)より一段沈めつつ
+     はっきり読める明るいグレーにする(#4) */
+  color: #ccc;
   font-size: 1.2rem;
   margin: 0;
+  /* 本文と同じく、結合句の区切り(全角スペース)で優先的に折り返す(#3) */
+  word-break: keep-all;
 }
 
 .gongyo-text {
@@ -388,12 +413,6 @@ body {
   font-size: 0.9rem;
 }
 
-.gongyo-intro-name {
-  font-size: 1.8rem;
-  font-weight: bold;
-  line-height: 1.5;
-}
-
 .gongyo-preset-select {
   background: none;
   border: none;
@@ -450,6 +469,18 @@ body {
   min-height: 0;
   justify-content: center;
   align-items: stretch;
+}
+
+/* フリガナ付きの行は、本文とフリガナで折り返す列数がずれて対応が崩れるのを防ぐため、
+   常に1列に収める(#3)。align-items:stretchのままだと本文とフリガナが独立に
+   列を跨いで折り返しうる(どちらか一方だけ列が増えると、フリガナがどの本文の
+   列に対応するか分からなくなる)。align-self:flex-startだけでは効果が無く
+   (flexの自動クロスサイズ計算がこの構成では内容なりの高さにならなかった)、
+   height: max-contentを明示することで初めて内容(本文・フリガナのうち長い方)に
+   ぴったりの高さになり、両方とも1列に収まる。列を跨がせないぶん、画面の高さより
+   長い場合は下端をはみ出しうるが、本文とフリガナの対応が崩れるより実害が小さい。 */
+.gongyo-vertical .gongyo-line-has-ruby {
+  height: max-content;
 }
 
 /* 縦書きの字送りは段階(tier)ではなく画面の実寸から決める。

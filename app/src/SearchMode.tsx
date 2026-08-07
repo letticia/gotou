@@ -35,6 +35,7 @@ export default function SearchMode() {
   const [history, setHistory] = useState<number[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
+  const queryInputRef = useRef<HTMLInputElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
 
@@ -189,14 +190,30 @@ export default function SearchMode() {
 
   return (
     <div className="app">
-      <input
-        autoFocus
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="読みまたは見出し語で検索"
-        className="search-input"
-      />
+      <div className="search-input-wrapper">
+        <input
+          ref={queryInputRef}
+          autoFocus
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="読みまたは見出し語で検索"
+          className="search-input"
+        />
+        {query && (
+          <button
+            type="button"
+            className="search-clear-button"
+            aria-label="検索語をクリア"
+            onClick={() => {
+              setQuery("");
+              queryInputRef.current?.focus();
+            }}
+          >
+            ×
+          </button>
+        )}
+      </div>
       {loadState.status === "checking" && <p className="empty">辞書データを確認中…</p>}
       {loadState.status === "acquiring" && (
         <div className="download-progress">

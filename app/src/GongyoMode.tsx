@@ -259,15 +259,34 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   }
 
   if (!introShown) {
+    // 扉(導入画面)は差定名だけを表示する経本の表紙のようなもののため、
+    // 縦/横トグルの対象にせず常に縦書き・中央表示にする(#6)。
+    // 本文と同じ.gongyo-line/.gongyo-textの構造に乗せることで、
+    // 字送り・中央揃えのロジックをそのまま再利用する。
+    const introLines: GongyoPageLine[] = [{ text: preset.name }];
     return (
-      <div className="gongyo gongyo-intro" onClick={() => setIntroShown(true)}>
+      <div className="gongyo gongyo-vertical gongyo-intro" onClick={() => setIntroShown(true)}>
         <div className="gongyo-header">
           <button type="button" className="gongyo-preset-select" onClick={handleOpenPicker}>
             差定を選ぶ
           </button>
         </div>
         <div className="gongyo-body">
-          <p className="gongyo-intro-name">{preset.name}</p>
+          <div
+            className="gongyo-lines"
+            style={
+              {
+                "--gongyo-columns": verticalColumnCount(introLines),
+                "--gongyo-max-chars": Math.ceil(verticalMaxLineLength(introLines)),
+              } as React.CSSProperties
+            }
+          >
+            <div className="gongyo-line-group">
+              <div className="gongyo-line">
+                <p className="gongyo-text">{preset.name}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -305,11 +324,11 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   // 実際に読む本文だけを.gongyo-line-groupでまとめて中央揃えの対象にする(縦書き)。
   function renderLine(line: GongyoPageLine, absoluteIndex: number) {
     const ruby = absoluteIndex === 0 ? resolveDisplayRuby(page, nav.counterRemaining) : line.ruby;
+    const className = ["gongyo-line", line.dimmed && "gongyo-line-dimmed", ruby && "gongyo-line-has-ruby"]
+      .filter(Boolean)
+      .join(" ");
     return (
-      <div
-        key={absoluteIndex}
-        className={line.dimmed ? "gongyo-line gongyo-line-dimmed" : "gongyo-line"}
-      >
+      <div key={absoluteIndex} className={className}>
         {ruby && <p className="gongyo-ruby">{ruby}</p>}
         <p className="gongyo-text">{line.text}</p>
       </div>
