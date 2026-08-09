@@ -108,57 +108,88 @@ body {
   font-size: calc(1rem * var(--dict-font-scale, 1));
 }
 
+/* 文字サイズのステッパー。2つのボタンを繋いだカプセル(iOSのステッパーに倣う)。
+   44ptのタップ領域を確保する。 */
 .font-scale-row {
-  display: flex;
-  gap: var(--space-2);
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--fill-subtle);
+  border-radius: 999px;
+  overflow: hidden;
   margin-bottom: var(--space-4);
 }
 
 .font-scale-button {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  background: none;
+  border: none;
+  color: var(--accent);
   font-family: var(--font-ui);
-  font-size: 0.9rem;
-  padding: 0.3rem 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-scale-button + .font-scale-button {
+  border-left: 1px solid var(--separator);
+}
+
+.font-scale-button:active:not(:disabled) {
+  background: var(--fill-subtle);
 }
 
 .font-scale-button:disabled {
-  opacity: 0.4;
+  color: var(--text-tertiary);
+  opacity: 0.5;
   cursor: default;
 }
 
 .search-input-wrapper {
   position: relative;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .search-input {
   width: 100%;
   box-sizing: border-box;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
+  min-height: var(--tap-min);
+  background: var(--fill-subtle);
+  border: none;
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-content);
   font-size: 1.2em;
-  padding: 0.6rem 2.2rem 0.6rem 0.8rem;
+  padding: 0.55rem 2.4rem 0.55rem 0.9rem;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .search-clear-button {
   position: absolute;
   top: 50%;
-  right: 0.3rem;
+  right: 0.35rem;
   transform: translateY(-50%);
-  width: 1.8em;
-  height: 1.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 見た目は小さな×のままだが、タップ領域は44ptを下回らないようにする */
+  width: max(var(--tap-min), 1.9em);
+  height: max(var(--tap-min), 1.9em);
   border: none;
   border-radius: 50%;
   background: none;
   color: var(--text-tertiary);
-  font-size: 1.3em;
+  font-size: 1.2em;
   line-height: 1;
   cursor: pointer;
 }
@@ -173,8 +204,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  gap: var(--space-3);
   width: 100%;
-  padding: 0.5rem 0.4rem;
+  min-height: var(--tap-min);
+  padding: 0.6rem 0.2rem;
   background: none;
   border: none;
   border-bottom: 1px solid var(--separator);
@@ -183,6 +216,16 @@ body {
   font-family: var(--font-content);
   font-size: 1em;
   cursor: pointer;
+  transition: background-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.result-list button:active {
+  background: var(--fill-subtle);
+}
+
+.result-list li:last-child button {
+  border-bottom: none;
 }
 
 .result-list .title {
@@ -192,6 +235,7 @@ body {
 .result-list .reading {
   color: var(--text-secondary);
   font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .empty {
@@ -225,23 +269,28 @@ body {
 }
 
 .detail {
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--separator);
+  padding-top: var(--space-2);
 }
 
-.detail h2,
+.detail h2 {
+  font-family: var(--font-content);
+  font-size: 1.7em;
+  line-height: 1.35;
+  margin: 0 0 0.2em;
+}
+
 .detail .reading {
   font-family: var(--font-content);
-}
-
-.detail .reading {
+  font-size: 0.95em;
   color: var(--text-secondary);
+  margin: 0 0 1.2em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid var(--separator);
 }
 
 .body-html {
   font-family: var(--font-content);
-  line-height: 1.7;
+  line-height: 1.85;
 }
 
 .body-html p {
@@ -470,36 +519,75 @@ body {
   padding: 0.4rem 0.5rem;
 }
 
+/* --- 設定画面(iOSの「グループ化されたリスト」に倣う) --- */
+.shell-settings {
+  background: var(--bg-grouped);
+}
+
 .settings-screen {
   max-width: 640px;
   margin: 0 auto;
-  padding: var(--space-5);
+  padding: var(--space-2) var(--space-5) var(--space-6);
 }
 
 .settings-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
 }
 
-.settings-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
+.settings-title {
+  margin: var(--space-1) 0 var(--space-5);
+  font-family: var(--font-ui);
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.settings-header .back-button {
-  margin-bottom: 0;
+.settings-group {
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
-.settings-item {
+.settings-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
 }
 
-.settings-item label {
-  font-size: 0.85rem;
+/* 行が増えたときの区切り線。iOSに倣ってラベル側だけ内側に寄せる */
+.settings-row + .settings-row {
+  border-top: 1px solid var(--separator);
+}
+
+.settings-row-label {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.settings-select {
+  max-width: 60%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  text-align: right;
+  /* iOSのセル右側の値と同じ見え方にする(枠を持たせない) */
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.settings-footnote {
+  margin: var(--space-2) var(--space-1) 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  line-height: 1.5;
   color: var(--text-secondary);
 }
 
@@ -647,6 +735,20 @@ body {
   font-family: var(--font-ui);
   font-size: 0.75rem;
   color: var(--text-tertiary);
+}
+
+.gongyo-preset-name {
+  /* 差定名は文脈の補助。偈文名(--accent)より一段沈める */
+  font-family: var(--font-content);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 扉(差定名だけを見せる導入画面)。本編より余白を広く取り、静かに始まる */
+.gongyo-intro .gongyo-body {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-6);
 }
 
 .gongyo-unit-title {
@@ -842,19 +944,30 @@ body {
 .preset-picker-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .preset-picker-header h2 {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
   margin: 0;
 }
 
+.preset-picker-header .gongyo-back {
+  min-height: var(--tap-min);
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+/* セクション見出し(「マイ差定」「雛形」)。iOSのグループ見出しに倣う */
 .preset-section h3 {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin: var(--space-5) 0 var(--space-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--text-tertiary);
+  margin: var(--space-5) 0 var(--space-1);
 }
 
 .preset-list {
@@ -863,35 +976,45 @@ body {
   padding: 0;
 }
 
+/* 差定名は長い(「日常勤行式(三奉請・三身礼版)」等)。操作ボタンと横並びにすると
+   名前が数文字幅まで潰れて読めなくなるため、名前を上・操作を下に積む。 */
 .preset-list-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: 0.8rem 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--separator);
 }
 
 .preset-name {
   font-family: var(--font-content);
-  font-size: 1rem;
+  font-size: 1.05rem;
+  line-height: 1.4;
 }
 
 .preset-actions {
   display: flex;
   gap: var(--space-2);
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .preset-actions button {
+  min-height: 2.2rem;
   background: none;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   color: var(--text);
   font-family: var(--font-ui);
-  padding: 0.4rem 0.7rem;
+  padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: background-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.preset-actions button:active {
+  background: var(--fill-subtle);
 }
 
 .preset-actions .preset-delete {
@@ -1113,4 +1236,50 @@ body {
   font-family: var(--font-ui);
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+/* =========================================================================
+   モーション
+
+   押した手応えと画面遷移だけに、ごく控えめに付ける。
+   端末側で「視差効果を減らす」を有効にしている利用者には一切animateしない。
+   ========================================================================= */
+.nav-bar-button,
+.tab-bar-item,
+.back-button {
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+
+.nav-bar-button:active,
+.back-button:active,
+.tab-bar-item:active {
+  opacity: 0.55;
+}
+
+/* 記事・設定など、入れ替わりで現れる画面のごく短いフェードイン */
+.detail,
+.settings-screen {
+  animation: gotou-fade-in 0.18s ease-out;
+}
+
+@keyframes gotou-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

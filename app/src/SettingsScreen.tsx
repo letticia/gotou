@@ -16,23 +16,31 @@ export default function SettingsScreen({ fontChoice, onFontChange, onClose }: Se
           <ChevronLeftIcon />
           <span>戻る</span>
         </button>
-        <h2>設定</h2>
       </div>
-      <div className="settings-item">
-        <label htmlFor="settings-font-choice">フォント</label>
-        <select
-          id="settings-font-choice"
-          className="font-choice-select"
-          value={fontChoice}
-          onChange={(event) => onFontChange(event.target.value as FontChoice)}
-        >
-          {(Object.keys(FONT_LABELS) as FontChoice[]).map((choice) => (
-            <option key={choice} value={choice}>
-              {FONT_LABELS[choice]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <h2 className="settings-title">設定</h2>
+
+      <section className="settings-group">
+        <div className="settings-row">
+          <label className="settings-row-label" htmlFor="settings-font-choice">
+            フォント
+          </label>
+          <select
+            id="settings-font-choice"
+            className="settings-select"
+            value={fontChoice}
+            onChange={(event) => onFontChange(event.target.value as FontChoice)}
+          >
+            {(Object.keys(FONT_LABELS) as FontChoice[]).map((choice) => (
+              <option key={choice} value={choice}>
+                {FONT_LABELS[choice]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
+      <p className="settings-footnote">
+        辞書と勤行の本文に使う書体です。文字の大きさは辞書の画面で変えられます。
+      </p>
     </div>
   );
 }

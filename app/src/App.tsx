@@ -54,6 +54,7 @@ export default function App() {
   const shellClassName = [
     "shell",
     mode === "gongyo" && !showSettings && "shell-gongyo",
+    showSettings && "shell-settings",
     showTabBar && "shell-with-tab-bar",
   ]
     .filter(Boolean)
