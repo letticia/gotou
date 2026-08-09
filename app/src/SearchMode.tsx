@@ -138,7 +138,9 @@ export default function SearchMode() {
       }
     }
 
-    if (!isStandalonePwa()) {
+    // 開発サーバーでは通常のブラウザタブでも画面を確認できるようにする
+    // (本番ビルドではimport.meta.env.DEVがfalseになり、従来通りの判定に戻る)
+    if (!isStandalonePwa() && !import.meta.env.DEV) {
       setLoadState({ status: "not-installed" });
     } else {
       hasCachedLiveDictionary()

@@ -1,19 +1,106 @@
+/* =========================================================================
+   デザイントークン
+
+   色は必ずここのセマンティックトークン経由で参照する(画面ごとに16進数を
+   直書きしない)。直書きが散在していた頃は、ライトモードで歯車やA-/A+が
+   黒い塊として浮き、ダークモードで検索結果の区切り線が白すぎる、という
+   どちらのモードでも破綻した状態になっていた。
+
+   コントラストはWCAG AA(本文4.5:1・大きい文字/UI部品3:1)を満たす値を
+   実測して選んでいる。金・燈色は白背景で比が稼げないため
+   (#e0a030は白地で2.27:1しかない)、ライトとダークで別の値を持たせている。
+   ========================================================================= */
 :root {
-  /* 選択中のフォント(App.tsxがfontChoice.tsの値で書き換える)。
-     Webフォント読み込み失敗時に備え、既定値にも従来のフォールバック列を持たせる */
-  --app-font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
-  font-family: var(--app-font-family);
   color-scheme: light dark;
+
+  /* 選択中のフォント(App.tsxがfontChoice.tsの値で書き換える)。
+     Webフォント読み込み失敗時に備え、既定値にもフォールバック列を持たせる */
+  --app-font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
+
+  /* 書体の使い分け: UIクロム(タブ・ボタン・ラベル・設定)はシステムフォント、
+     辞書本文や勤行本文といった「読み物」だけが選択中の書体をまとう。
+     UI部品まで明朝で組むと、アプリではなくWebページに見えてしまう。 */
+  --font-ui: -apple-system, BlinkMacSystemFont, system-ui, "Hiragino Sans",
+    "Yu Gothic UI", "Noto Sans JP", sans-serif;
+  --font-content: var(--app-font-family);
+
+  /* --- 面 --- */
+  --bg: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-grouped: #f2f2f7;
+  --bg-input: #ffffff;
+  --fill-subtle: rgba(120, 120, 128, 0.12);
+
+  /* --- 文字 --- */
+  --text: #1c1c1e;
+  --text-secondary: #6c6c70;
+  --text-tertiary: #8e8e93;
+
+  /* --- 線 --- */
+  --separator: #c6c6c8;
+  --border: #d1d1d6;
+
+  /* --- 強調(金・燈色。アイコンの蓮と炎、「語灯」の名に呼応させる) --- */
+  --accent: #8a5a00;
+  --accent-fill: #8a5a00;
+  --on-accent: #ffffff;
+
+  /* --- 状態 --- */
+  --danger: #c0392b;
+  --success: #1b7f3b;
+
+  /* --- 幾何 --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --tap-min: 44px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  font-family: var(--font-ui);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --bg-elevated: #1c1c1e;
+    --bg-grouped: #000000;
+    --bg-input: #1c1c1e;
+    --fill-subtle: rgba(120, 120, 128, 0.24);
+
+    --text: #ffffff;
+    --text-secondary: #aeaeb2;
+    --text-tertiary: #8e8e93;
+
+    --separator: #38383a;
+    --border: #48484a;
+
+    --accent: #e8b464;
+    --accent-fill: #e8b464;
+    --on-accent: #1a1200;
+
+    --danger: #ff6b6b;
+    --success: #7fc97f;
+  }
 }
 
 body {
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-text-size-adjust: 100%;
 }
 
 .app {
   max-width: 640px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: var(--space-5);
   /* 辞書モードの文字サイズ選択(SearchMode.tsxが:rootへ書き込む)。
      .app配下のフォントサイズをem指定にして、ここを基準に一括で拡大縮小できるようにする */
   font-size: calc(1rem * var(--dict-font-scale, 1));
@@ -21,15 +108,16 @@ body {
 
 .font-scale-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .font-scale-button {
-  background: #111;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #ccc;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
@@ -42,12 +130,17 @@ body {
 
 .search-input-wrapper {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .search-input {
   width: 100%;
   box-sizing: border-box;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-content);
   font-size: 1.2em;
   padding: 0.6rem 2.2rem 0.6rem 0.8rem;
 }
@@ -62,8 +155,7 @@ body {
   border: none;
   border-radius: 50%;
   background: none;
-  color: inherit;
-  opacity: 0.6;
+  color: var(--text-tertiary);
   font-size: 1.3em;
   line-height: 1;
   cursor: pointer;
@@ -83,8 +175,10 @@ body {
   padding: 0.5rem 0.4rem;
   background: none;
   border: none;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--separator);
+  color: var(--text);
   text-align: left;
+  font-family: var(--font-content);
   font-size: 1em;
   cursor: pointer;
 }
@@ -94,26 +188,20 @@ body {
 }
 
 .result-list .reading {
-  color: #777;
+  color: var(--text-secondary);
   font-size: 0.85em;
 }
 
 .empty {
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .empty.error {
-  color: #d9534f;
+  color: var(--danger);
 }
 
 .download-progress {
-  margin-bottom: 1rem;
-}
-
-.download-progress-bar {
-  width: 100%;
-  height: 0.5rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: var(--space-4);
 }
 
 .download-prompt {
@@ -125,16 +213,32 @@ body {
 
 .download-start-button {
   padding: 0.6rem 1.2rem;
+  background: var(--accent-fill);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--on-accent);
+  font-family: var(--font-ui);
   font-size: 1em;
+  cursor: pointer;
 }
 
 .detail {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 2px solid #333;
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--separator);
+}
+
+.detail h2,
+.detail .reading {
+  font-family: var(--font-content);
+}
+
+.detail .reading {
+  color: var(--text-secondary);
 }
 
 .body-html {
+  font-family: var(--font-content);
   line-height: 1.7;
 }
 
@@ -144,18 +248,18 @@ body {
 
 .body-html hr.section-divider {
   border: 0;
-  border-top: 1px dashed #555;
+  border-top: 1px solid var(--separator);
   margin: 1em 0;
 }
 
 .body-html h2.dict-section-heading,
 .body-html h3.dict-section-heading {
-  color: #e0a030;
+  color: var(--accent);
   margin: 1em 0 0.4em;
 }
 
 .body-html .external-link {
-  color: #27ae60;
+  color: var(--accent);
 }
 
 .body-html table.wikitable {
@@ -167,7 +271,7 @@ body {
 
 .body-html table.wikitable th,
 .body-html table.wikitable td {
-  border: 1px solid #555;
+  border: 1px solid var(--border);
   padding: 0.3em 0.6em;
   text-align: left;
 }
@@ -175,9 +279,9 @@ body {
 .body-html .dict-image-container {
   margin: 1em 0;
   padding: 0.6em;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
+  background: var(--bg-grouped);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-sm);
   text-align: center;
 }
 
@@ -186,19 +290,20 @@ body {
 }
 
 .body-html .dict-image-caption {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.85em;
   margin-top: 0.4em;
 }
 
 .body-html rt {
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .back-button {
   background: none;
   border: none;
-  color: inherit;
+  color: var(--accent);
+  font-family: var(--font-ui);
   font-size: 0.95em;
   cursor: pointer;
   padding: 0;
@@ -210,46 +315,46 @@ body {
   border: none;
   padding: 0;
   font: inherit;
-  /* #2980b9は黒背景でのコントラスト比が約4.9:1と低く読みにくいため、
-     約8.5:1確保できる明るい青にする(#2)。 */
-  color: #5dade2;
+  color: var(--accent);
   text-decoration: underline;
   cursor: pointer;
 }
 
 .internal-link.broken {
-  color: #999;
+  color: var(--text-tertiary);
   text-decoration: none;
   cursor: default;
 }
 
 .shell {
   min-height: 100vh;
+  background: var(--bg);
 }
 
 .mode-tabs {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   max-width: 640px;
   margin: 0 auto;
-  padding: 0.75rem 1.5rem 0;
+  padding: var(--space-3) var(--space-5) 0;
 }
 
 .mode-tabs button {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #666;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: none;
-  color: inherit;
+  color: var(--text);
+  font-family: var(--font-ui);
   font-size: 1rem;
   cursor: pointer;
 }
 
 .mode-tabs button.active {
-  background: #2980b9;
-  border-color: #2980b9;
-  color: #fff;
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 .settings-entry-row {
@@ -257,19 +362,19 @@ body {
   justify-content: flex-end;
   max-width: 640px;
   margin: 0 auto;
-  padding: 0.5rem 1.5rem 0;
+  padding: var(--space-2) var(--space-5) 0;
 }
 
 .shell-gongyo .settings-entry-row {
   max-width: none;
-  padding: 0.5rem 0.75rem 0;
+  padding: var(--space-2) var(--space-3) 0;
 }
 
 .settings-gear-button {
-  background: #111;
-  border: 1px solid #444;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   border-radius: 50%;
-  color: #ccc;
+  color: var(--text);
   font-size: 1rem;
   width: 2rem;
   height: 2rem;
@@ -278,10 +383,11 @@ body {
 }
 
 .font-choice-select {
-  background: #111;
-  border: 1px solid #444;
-  border-radius: 4px;
-  color: #ccc;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   padding: 0.4rem 0.5rem;
 }
@@ -289,14 +395,14 @@ body {
 .settings-screen {
   max-width: 640px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .settings-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .settings-header h2 {
@@ -316,11 +422,43 @@ body {
 
 .settings-item label {
   font-size: 0.85rem;
-  color: #aaa;
+  color: var(--text-secondary);
+}
+
+/* =========================================================================
+   勤行モード
+
+   経本の体裁を保つため、端末がライトモードでも**常に暗色**で描く
+   (写真ビューアのような没入画面を常に暗くするのと同じ考え方)。
+   トークンをこのスコープで上書きするので、配下の部品はライト/ダークを
+   意識せずトークンを参照できる。
+   ========================================================================= */
+.shell-gongyo,
+.preset-picker,
+.preset-editor {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-elevated: #111111;
+  --bg-grouped: #000000;
+  --bg-input: #111111;
+  --text: #ffffff;
+  --text-secondary: #aeaeb2;
+  --text-tertiary: #8e8e93;
+  --separator: #333333;
+  --border: #48484a;
+  --accent: #e8b464;
+  --accent-fill: #e8b464;
+  --on-accent: #1a1200;
+  --danger: #ff6b6b;
+  --success: #7fc97f;
+  /* ルビ専用。本文(白)より一段沈めつつ、はっきり読める明るいグレー。
+     #999は黒背景で控えめすぎて読みにくかった(#4)。--text-secondaryより
+     明るくないと、ルビの小さな字では潰れて見える。 */
+  --gongyo-ruby: #cccccc;
 }
 
 .shell-gongyo {
-  background: #000;
+  background: var(--bg);
   /* 勤行モードはページ全体をスクロールさせず、バナー・タブを除いた残りの領域に
      ぴったり収める。100vhから固定値を引く方式だと、プロトタイプ注記バナーの高さが
      画面幅で変わる(狭い画面では3行になる)ぶんだけはみ出し、カウンターや
@@ -333,7 +471,7 @@ body {
 
 .shell-gongyo .mode-tabs {
   max-width: none;
-  padding: 0.75rem;
+  padding: var(--space-3);
   /* .shell-gongyoを縦flexにしたため、.mode-tabsの`margin: 0 auto`が
      交差軸のstretchを打ち消してタブが内容幅まで縮む。幅を明示して元の見た目を保つ */
   width: 100%;
@@ -345,8 +483,8 @@ body {
      内容の大きさで押し広げられ、はみ出した分が画面外に出る */
   flex: 1;
   min-height: 0;
-  background: #000;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -359,15 +497,17 @@ body {
 .gongyo-header {
   display: flex;
   align-items: center;
-  padding: 0.5rem 1.5rem;
+  padding: var(--space-2) var(--space-5);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .gongyo-back {
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -384,14 +524,13 @@ body {
   align-items: flex-start;
   justify-content: center;
   text-align: left;
-  padding: 2rem 1.5rem 2rem 2.5rem;
-  gap: 1rem;
+  padding: var(--space-6) var(--space-5) var(--space-6) 2.5rem;
+  gap: var(--space-4);
 }
 
 .gongyo-ruby {
-  /* #999は黒背景で控えめすぎて読みにくいため、本文(白)より一段沈めつつ
-     はっきり読める明るいグレーにする(#4) */
-  color: #ccc;
+  color: var(--gongyo-ruby);
+  font-family: var(--font-content);
   font-size: 1.2rem;
   margin: 0;
   /* 本文と同じく、結合句の区切り(全角スペース)で優先的に折り返す(#3) */
@@ -399,6 +538,7 @@ body {
 }
 
 .gongyo-text {
+  font-family: var(--font-content);
   font-size: 3rem;
   font-weight: bold;
   line-height: 1.4;
@@ -411,35 +551,37 @@ body {
 
 .gongyo-counter {
   font-size: 2.5rem;
-  color: #e0a030;
+  color: var(--accent);
   margin: 0;
 }
 
 .gongyo-finished {
-  color: #7fc97f;
+  color: var(--success);
   font-size: 1.1rem;
   margin: 0;
 }
 
 .gongyo-error {
-  padding: 2rem;
-  color: #f88;
+  padding: var(--space-6);
+  color: var(--danger);
 }
 
 .gongyo-labels {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 1rem;
-  padding: 0 1.5rem;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  font-family: var(--font-ui);
   font-size: 0.75rem;
-  color: #777;
+  color: var(--text-tertiary);
 }
 
 .gongyo-unit-title {
+  font-family: var(--font-content);
   font-size: 1.15rem;
   font-weight: bold;
-  color: #e0a030;
+  color: var(--accent);
 }
 
 .gongyo-lines,
@@ -485,7 +627,8 @@ body {
 .gongyo-preset-select {
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
   cursor: pointer;
   margin-left: auto;
@@ -493,14 +636,15 @@ body {
 
 .gongyo-orientation-toggle {
   background: none;
-  border: 1px solid #444;
-  border-radius: 0.25rem;
-  color: #aaa;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
   font-size: 0.8rem;
   padding: 0.15rem 0.5rem;
   cursor: pointer;
   /* 「← 前へ」と隣接したときに押し間違えないよう間隔を空ける */
-  margin-left: 1rem;
+  margin-left: var(--space-4);
 }
 
 /* --- 縦書き(経本)表示 ---
@@ -510,7 +654,7 @@ body {
 .gongyo-vertical .gongyo-body {
   align-items: stretch;
   /* 横書きの左マージンに相当する余白を右側に取る(経本は右から始まる) */
-  padding: 1.5rem 2rem 1.5rem 1.5rem;
+  padding: var(--space-5) var(--space-6) var(--space-5) var(--space-5);
 }
 
 .gongyo-vertical .gongyo-lines {
@@ -562,7 +706,7 @@ body {
    ・高さの制約: 1行が1列に収まる字送り
    ・下限1.2rem: これ以上小さくしない。一枚起請文(114字)のような長文を1列に
      押し込もうとすると数pxまで縮んで読めなくなるため、下限で止めて
-     左隣の列へ折り返させる(折り返しは.gongyo-linesのalign-items:stretchによる)。 */
+     左隣の列へ折り返させる(折り返しは.gongyo-linesのalign-items:stretchによる) */
 .gongyo-vertical .gongyo-line {
   font-size: min(
     3rem,
@@ -602,16 +746,17 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: #000;
-  color: #fff;
-  padding: 1rem 1.5rem 2rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  padding: var(--space-4) var(--space-5) var(--space-6);
 }
 
 .preset-picker-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .preset-picker-header h2 {
@@ -621,8 +766,8 @@ body {
 
 .preset-section h3 {
   font-size: 0.85rem;
-  color: #999;
-  margin: 1.5rem 0 0.5rem;
+  color: var(--text-secondary);
+  margin: var(--space-5) 0 var(--space-2);
 }
 
 .preset-list {
@@ -635,46 +780,49 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   padding: 0.8rem 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--separator);
 }
 
 .preset-name {
+  font-family: var(--font-content);
   font-size: 1rem;
 }
 
 .preset-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .preset-actions button {
   background: none;
-  border: 1px solid #666;
-  border-radius: 4px;
-  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   padding: 0.4rem 0.7rem;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .preset-actions .preset-delete {
-  border-color: #a33;
-  color: #f88;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .preset-name-input {
   width: 100%;
   box-sizing: border-box;
+  font-family: var(--font-content);
   font-size: 1.1rem;
-  padding: 0.5rem 0.7rem;
-  margin-bottom: 1rem;
-  background: #111;
-  border: 1px solid #444;
-  color: #fff;
-  border-radius: 4px;
+  padding: var(--space-2) 0.7rem;
+  margin-bottom: var(--space-4);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
 }
 
 .preset-editor-list {
@@ -688,7 +836,7 @@ body {
   align-items: center;
   gap: 0.8rem;
   padding: 0.6rem 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--separator);
 }
 
 .preset-editor-item.disabled {
@@ -705,9 +853,10 @@ body {
 .preset-editor-counter button,
 .preset-editor-toggle {
   background: none;
-  border: 1px solid #666;
-  border-radius: 4px;
-  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   cursor: pointer;
 }
 
@@ -723,6 +872,7 @@ body {
 
 .preset-editor-title {
   flex: 1;
+  font-family: var(--font-content);
   font-size: 0.95rem;
 }
 
@@ -731,7 +881,7 @@ body {
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .preset-editor-counter button {
@@ -744,19 +894,20 @@ body {
 }
 
 .preset-save {
-  margin-top: 1.5rem;
+  margin-top: var(--space-5);
   width: 100%;
   padding: 0.7rem;
-  background: #2980b9;
+  background: var(--accent-fill);
   border: none;
-  border-radius: 4px;
-  color: #fff;
+  border-radius: var(--radius-sm);
+  color: var(--on-accent);
+  font-family: var(--font-ui);
   font-size: 1rem;
   cursor: pointer;
 }
 
 .preset-list-item-wrapper {
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--separator);
 }
 
 .preset-list-item-wrapper .preset-list-item {
@@ -768,20 +919,22 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  padding: 1rem 0 1.2rem;
-  background: #111;
-  border-radius: 6px;
+  padding: var(--space-4) 0 1.2rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
 }
 
 .share-panel svg {
-  background: #fff;
-  padding: 0.5rem;
-  border-radius: 4px;
+  /* QRコードは読み取りのために白の余白(クワイエットゾーン)が要るため、
+     配色モードに関わらず常に白。ここだけはトークンを使わない。 */
+  background: #ffffff;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
 }
 
 .share-url {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--text-secondary);
   word-break: break-all;
   max-width: 90%;
   text-align: center;
@@ -790,16 +943,17 @@ body {
 
 .share-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .share-actions button {
   background: none;
-  border: 1px solid #666;
-  border-radius: 4px;
-  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   padding: 0.4rem 0.7rem;
   font-size: 0.8rem;
   cursor: pointer;
@@ -808,10 +962,10 @@ body {
 .preset-import-textarea {
   width: 100%;
   box-sizing: border-box;
-  background: #111;
-  border: 1px solid #444;
-  color: #fff;
-  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
   padding: 0.6rem;
   font-size: 0.85rem;
   font-family: inherit;
@@ -819,32 +973,34 @@ body {
 }
 
 .preset-import-error {
-  color: #f88;
+  color: var(--danger);
   font-size: 0.85rem;
 }
 
 .preset-import-button {
   margin-top: 0.6rem;
-  padding: 0.5rem 1rem;
+  padding: var(--space-2) var(--space-4);
   background: none;
-  border: 1px solid #666;
-  border-radius: 4px;
-  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-ui);
   cursor: pointer;
 }
 
 .preset-import-summary {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.85rem;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-4);
 }
 
 .prototype-notice {
-  background: #4a3510;
-  color: #f2d9a0;
-  font-size: 0.8rem;
+  background: var(--fill-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
   line-height: 1.4;
-  padding: 0.5rem 1.5rem;
+  padding: 0.4rem var(--space-5);
   text-align: center;
 }
 
@@ -853,14 +1009,21 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
-  background: #12324a;
-  color: #cfe6f7;
+  background: var(--fill-subtle);
+  color: var(--text);
+  font-family: var(--font-ui);
   font-size: 0.85rem;
-  padding: 0.5rem 1.5rem;
+  padding: var(--space-2) var(--space-5);
   text-align: center;
 }
 
 .update-banner button {
   padding: 0.3rem 0.8rem;
+  background: var(--accent-fill);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--on-accent);
+  font-family: var(--font-ui);
   font-size: 0.85rem;
+  cursor: pointer;
 }
