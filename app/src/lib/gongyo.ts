@@ -1,3 +1,4 @@
+import type { GongyoCounterMode } from "./gongyoCounterMode";
 import type { GongyoOrientation } from "./gongyoOrientation";
 
 export interface GongyoUnitBodyItem {
@@ -127,12 +128,25 @@ export function buildPages(
   preset: GongyoPreset,
   unitsById: Map<string, GongyoUnit>,
   orientation: GongyoOrientation = "horizontal",
+  counterMode: GongyoCounterMode = "label",
 ): GongyoPage[] {
   const pages: GongyoPage[] = [];
   for (const [itemIndex, item] of preset.items.entries()) {
     if (item.enabled === false) continue;
     const unit = unitsById.get(item.unit);
     if (!unit) continue;
+
+    // counter付きunit(十念・三唱礼等)の既定は「回数を数えず、unit名だけ1回示す」
+    // 簡易表示。カウントダウン方式(従来の挙動)は設定でオプトインする。
+    if (item.counter !== undefined && counterMode === "label") {
+      pages.push({
+        unitId: unit.id,
+        itemIndex,
+        unitTitle: unit.title,
+        lines: [{ text: unit.title, ruby: unit.reading }],
+      });
+      continue;
+    }
 
     // 縦書きは短い句をまとめ、長すぎる句を分ける(unitのJSONは変えずここで組み替える)
     const body = orientation === "vertical" ? verticalBody(unit.body) : unit.body;

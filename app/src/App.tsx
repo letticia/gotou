@@ -8,6 +8,8 @@ import { parseShareHash } from "./lib/presetSharing";
 import { useServiceWorkerUpdate } from "./useServiceWorkerUpdate";
 import type { FontChoice } from "./lib/fontChoice";
 import { fontStackFor, loadFontChoice, saveFontChoice } from "./lib/fontChoice";
+import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
+import { loadCounterMode, saveCounterMode } from "./lib/gongyoCounterMode";
 
 type Mode = "search" | "gongyo";
 
@@ -18,6 +20,9 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
+  // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
+  // 設定画面へ値を渡し・変更を保存する橋渡し役のみ(GongyoModeへは渡さない)
+  const [counterMode, setCounterMode] = useState<GongyoCounterMode>(() => loadCounterMode());
   // 勤行の読誦中は画面全体を経本にする(タブバー・ナビバーを隠す)。
   // 「画面下半分どこでもタップでページ送り」(CLAUDE.md)とボトムタブバーは
   // 操作が衝突するため、読誦中だけは必ず隠す。GongyoModeが状態を教えてくれる。
@@ -46,6 +51,11 @@ export default function App() {
   function handleFontChange(next: FontChoice) {
     setFontChoice(next);
     saveFontChoice(next);
+  }
+
+  function handleCounterModeChange(next: GongyoCounterMode) {
+    setCounterMode(next);
+    saveCounterMode(next);
   }
 
   const immersive = mode === "gongyo" && gongyoImmersive && !showSettings;
@@ -77,6 +87,8 @@ export default function App() {
         <SettingsScreen
           fontChoice={fontChoice}
           onFontChange={handleFontChange}
+          counterMode={counterMode}
+          onCounterModeChange={handleCounterModeChange}
           onClose={() => setShowSettings(false)}
         />
       ) : (

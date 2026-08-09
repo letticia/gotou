@@ -63,7 +63,7 @@ describe("buildPages", () => {
       version: 1,
       id: "p",
       name: "テスト差定",
-      items: [{ unit: "unit-a" }, { unit: "unit-b", counter: 10 }],
+      items: [{ unit: "unit-a" }, { unit: "unit-b" }],
     };
     const pages = buildPages(preset, units);
     expect(pages).toEqual([
@@ -83,8 +83,76 @@ describe("buildPages", () => {
         itemIndex: 1,
         unitTitle: "ユニットB",
         lines: [{ text: "単句", ruby: undefined }],
-        counterTotal: 10,
+        counterTotal: undefined,
         counterRubyOverrides: undefined,
+      },
+    ]);
+  });
+
+  it("shows a counter unit as a single label line by default, without counterTotal (十念等)", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "テスト差定",
+      items: [{ unit: "unit-b", counter: 10 }],
+    };
+    const pages = buildPages(preset, units);
+    expect(pages).toEqual([
+      {
+        unitId: "unit-b",
+        itemIndex: 0,
+        unitTitle: "ユニットB",
+        lines: [{ text: "ユニットB", ruby: "ゆにっとびー" }],
+      },
+    ]);
+  });
+
+  it('reproduces the countdown behavior when counterMode is "count"', () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "テスト差定",
+      items: [{ unit: "unit-a" }, { unit: "unit-b", counter: 10 }],
+    };
+    const pages = buildPages(preset, units, "horizontal", "count");
+    expect(pages[1]).toEqual({
+      unitId: "unit-b",
+      itemIndex: 1,
+      unitTitle: "ユニットB",
+      lines: [{ text: "単句", ruby: undefined }],
+      counterTotal: 10,
+      counterRubyOverrides: undefined,
+    });
+  });
+
+  it("label mode does not affect units without a counter", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "テスト差定",
+      items: [{ unit: "unit-a" }],
+    };
+    const pages = buildPages(preset, units, "horizontal", "label");
+    expect(pages[0].lines).toEqual([
+      { text: "一句目", ruby: "いっくめ" },
+      { text: "二句目", ruby: "にくめ" },
+    ]);
+  });
+
+  it("label mode takes priority even for a paginated unit with a counter", () => {
+    const preset: GongyoPreset = {
+      version: 1,
+      id: "p",
+      name: "テスト差定",
+      items: [{ unit: "unit-long", counter: 3 }],
+    };
+    const pages = buildPages(preset, units, "horizontal", "label");
+    expect(pages).toEqual([
+      {
+        unitId: "unit-long",
+        itemIndex: 0,
+        unitTitle: "ロングユニット",
+        lines: [{ text: "ロングユニット", ruby: "ろんぐゆにっと" }],
       },
     ]);
   });

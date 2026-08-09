@@ -10,6 +10,7 @@ import {
   verticalMaxLineLength,
 } from "./lib/gongyo";
 import type { GongyoPage, GongyoPageLine, GongyoPreset } from "./lib/gongyo";
+import { loadCounterMode } from "./lib/gongyoCounterMode";
 import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
@@ -81,6 +82,10 @@ export default function GongyoMode({
   const [view, setView] = useState<View>({ name: "reciting" });
   const [introShown, setIntroShown] = useState(false);
   const [orientation, setOrientation] = useState(() => loadOrientation());
+  // 十念・三唱礼の数え方(簡易表示/カウントダウン)。切り替えは設定画面でのみ行う
+  // (Appは設定画面表示中GongyoModeをアンマウントするため、再マウント時にここで
+  // 読み直すだけで最新の設定が反映される。orientationのようなヘッダートグルは無い)
+  const [counterMode] = useState(() => loadCounterMode());
 
   // 共有URLを開いた直後に取り込み確認画面へ遷移する
   useEffect(() => {
@@ -111,8 +116,8 @@ export default function GongyoMode({
   const preset = userPresetsById.get(presetId) ?? builtinPresetsById.get(presetId) ?? null;
   // 縦書きと横書きでは1タップで進む行数が異なるため、向きが変わるとページ構成も変わる
   const pages = useMemo(
-    () => (preset ? buildPages(preset, unitsById, orientation) : []),
-    [preset, unitsById, orientation],
+    () => (preset ? buildPages(preset, unitsById, orientation, counterMode) : []),
+    [preset, unitsById, orientation, counterMode],
   );
 
   const [nav, setNav] = useState<GongyoNavState>(() => initState(pages));
