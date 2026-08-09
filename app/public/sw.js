@@ -6,8 +6,15 @@ function isDictionaryDataRequest(pathname) {
   return DICTIONARY_DATA_PATHS.some((p) => pathname === p || pathname.endsWith(p));
 }
 
-// Bump this string by hand whenever a release should force-evict old shell caches.
-const SHELL_CACHE = "gotou-shell-v1";
+// scripts/generate-sw-precache.mjs がビルド後に "gotou-shell-<アセット一覧のハッシュ>" へ
+// 書き換える。この値はスクリプト未実行時(ソースそのまま)のプレースホルダ。
+const SHELL_CACHE = "gotou-shell-dev";
+
+// scripts/generate-sw-precache.mjs がビルド後に dist/assets/ の実ファイル名
+// (ハッシュ付きJS/CSS・SQLite wasm・ワーカースクリプト)で置き換える。
+// これが空のままだと、SW有効化直後まだ何もランタイムキャッシュされていない
+// タイミングでオフラインになった場合にアプリ本体が読み込めなくなる。
+const BUILD_ASSET_URLS = [];
 
 const PRECACHE_URLS = [
   "./",
@@ -15,6 +22,7 @@ const PRECACHE_URLS = [
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  ...BUILD_ASSET_URLS,
 ];
 
 self.addEventListener("install", (event) => {

@@ -11,6 +11,7 @@
     "dev": "vite",
     "prebuild": "npm run sync-shared && npm run build-dummy-db",
     "build": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && vite build",
+    "postbuild": "node scripts/generate-sw-precache.mjs",
     "preview": "vite preview",
     "pretest": "npm run sync-shared && npm run build-dummy-db",
     "test": "vitest run"
