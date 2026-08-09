@@ -1,3 +1,4 @@
+import { ChevronLeftIcon } from "./Icons";
 import type { FontChoice } from "./lib/fontChoice";
 import { FONT_LABELS } from "./lib/fontChoice";
 
@@ -12,7 +13,8 @@ export default function SettingsScreen({ fontChoice, onFontChange, onClose }: Se
     <div className="settings-screen">
       <div className="settings-header">
         <button type="button" className="back-button" onClick={onClose}>
-          ← 戻る
+          <ChevronLeftIcon />
+          <span>戻る</span>
         </button>
         <h2>設定</h2>
       </div>

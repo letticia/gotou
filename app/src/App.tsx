@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
 import SettingsScreen from "./SettingsScreen";
+import { BookIcon, FlameIcon, GearIcon } from "./Icons";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
 import { useServiceWorkerUpdate } from "./useServiceWorkerUpdate";
@@ -17,6 +18,10 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
+  // 勤行の読誦中は画面全体を経本にする(タブバー・ナビバーを隠す)。
+  // 「画面下半分どこでもタップでページ送り」(CLAUDE.md)とボトムタブバーは
+  // 操作が衝突するため、読誦中だけは必ず隠す。GongyoModeが状態を教えてくれる。
+  const [gongyoImmersive, setGongyoImmersive] = useState(false);
   const { updateAvailable, applyUpdate } = useServiceWorkerUpdate();
 
   // 差定の共有URL(#share=...)を開いた場合、勤行モードへ切り替えて取り込み確認を出す
@@ -43,8 +48,19 @@ export default function App() {
     saveFontChoice(next);
   }
 
+  const immersive = mode === "gongyo" && gongyoImmersive && !showSettings;
+  const showTabBar = !showSettings && !immersive;
+
+  const shellClassName = [
+    "shell",
+    mode === "gongyo" && !showSettings && "shell-gongyo",
+    showTabBar && "shell-with-tab-bar",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={mode === "gongyo" && !showSettings ? "shell shell-gongyo" : "shell"}>
+    <div className={shellClassName}>
       <div className="prototype-notice">
         これは開発中のプロトタイプです。浄土宗の公式アプリではありません。
       </div>
@@ -64,41 +80,51 @@ export default function App() {
         />
       ) : (
         <>
-          <nav className="mode-tabs">
-            <button
-              type="button"
-              className={mode === "search" ? "active" : ""}
-              onClick={() => setMode("search")}
-            >
-              辞書
-            </button>
-            <button
-              type="button"
-              className={mode === "gongyo" ? "active" : ""}
-              onClick={() => setMode("gongyo")}
-            >
-              勤行
-            </button>
-          </nav>
-          <div className="settings-entry-row">
-            <button
-              type="button"
-              className="settings-gear-button"
-              onClick={() => setShowSettings(true)}
-              aria-label="設定"
-            >
-              ⚙
-            </button>
-          </div>
+          {!immersive && (
+            <header className="nav-bar">
+              <h1 className="nav-bar-title">{mode === "search" ? "辞書" : "勤行"}</h1>
+              <button
+                type="button"
+                className="nav-bar-button"
+                onClick={() => setShowSettings(true)}
+                aria-label="設定"
+              >
+                <GearIcon />
+              </button>
+            </header>
+          )}
           {mode === "search" ? (
             <SearchMode />
           ) : (
             <GongyoMode
               pendingImport={pendingImport}
               onImportHandled={() => setPendingImport(null)}
+              onImmersiveChange={setGongyoImmersive}
             />
           )}
         </>
+      )}
+      {showTabBar && (
+        <nav className="tab-bar">
+          <button
+            type="button"
+            className={mode === "search" ? "tab-bar-item active" : "tab-bar-item"}
+            onClick={() => setMode("search")}
+            aria-current={mode === "search" ? "page" : undefined}
+          >
+            <BookIcon />
+            <span>辞書</span>
+          </button>
+          <button
+            type="button"
+            className={mode === "gongyo" ? "tab-bar-item active" : "tab-bar-item"}
+            onClick={() => setMode("gongyo")}
+            aria-current={mode === "gongyo" ? "page" : undefined}
+          >
+            <FlameIcon />
+            <span>勤行</span>
+          </button>
+        </nav>
       )}
     </div>
   );

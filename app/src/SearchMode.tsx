@@ -11,6 +11,7 @@ import {
   acquisitionProgressText,
 } from "./lib/dictionaryAcquisition";
 import type { AcquisitionProgress } from "./lib/dictionaryAcquisition";
+import { ChevronLeftIcon } from "./Icons";
 import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
@@ -41,7 +42,6 @@ export default function SearchMode() {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
@@ -181,7 +181,12 @@ export default function SearchMode() {
   }
 
   function goBack() {
-    if (history.length === 0) return;
+    // 履歴が空なら検索結果一覧へ戻る(記事画面は一覧と入れ替わりで表示されるため、
+    // 一覧へ戻る手段がこれしかない)
+    if (history.length === 0) {
+      setCurrentId(null);
+      return;
+    }
     setHistory(history.slice(0, -1));
     setCurrentId(history[history.length - 1]);
   }
@@ -197,14 +202,11 @@ export default function SearchMode() {
     }
   }
 
-  // 記事を切り替えるたびに本文エリアの先頭が見えるようスクロールし直す。
-  // 検索結果一覧はqueryが空にならない限り本文の上に表示され続けるため、
-  // 一覧が長いと本文がずっと下に押し出され「遷移できたか分からない」状態になる。
-  // window.scrollTo(top:0)だと一覧の先頭に戻るだけで本文が見えないため、
-  // 本文エリア自体をビューへスクロールする。
+  // 記事画面は検索結果一覧と入れ替わりで表示される(プッシュ遷移)ため、
+  // 記事を開く・記事間を移動するたびに画面先頭から読み始められるようにする。
   useEffect(() => {
     if (current) {
-      detailRef.current?.scrollIntoView({ block: "start" });
+      window.scrollTo(0, 0);
     }
   }, [current?.id]);
 
@@ -245,6 +247,36 @@ export default function SearchMode() {
           >
             ダウンロード開始
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 記事画面。検索結果一覧と入れ替わりで表示する(一覧の下に追記すると、
+  // 長い一覧の分だけ本文が押し下げられ「遷移できたか分からない」状態になる)。
+  if (current) {
+    return (
+      <div className="app">
+        <div className="detail-toolbar">
+          <button type="button" className="back-button" onClick={goBack}>
+            <ChevronLeftIcon />
+            <span>{history.length > 0 ? "戻る" : "検索"}</span>
+          </button>
+          {fontScaleRow}
+        </div>
+        <div className="detail">
+          <h2>{current.title}</h2>
+          <p className="reading">{current.reading}</p>
+          {/*
+            factoryの変換パイプライン(自分たちのコード)が生成した既知構造のHTML。
+            外部・ユーザー入力ではないためdangerouslySetInnerHTMLで許容する。
+          */}
+          <div
+            ref={bodyRef}
+            className="body-html"
+            onClick={handleBodyClick}
+            dangerouslySetInnerHTML={{ __html: current.bodyHtml }}
+          />
         </div>
       </div>
     );
@@ -296,27 +328,6 @@ export default function SearchMode() {
       </ul>
       {db && query && results.length === 0 && (
         <p className="empty">該当する項目がありません</p>
-      )}
-      {current && (
-        <div className="detail" ref={detailRef}>
-          {history.length > 0 && (
-            <button type="button" className="back-button" onClick={goBack}>
-              ← 戻る
-            </button>
-          )}
-          <h2>{current.title}</h2>
-          <p className="reading">{current.reading}</p>
-          {/*
-            factoryの変換パイプライン(自分たちのコード)が生成した既知構造のHTML。
-            外部・ユーザー入力ではないためdangerouslySetInnerHTMLで許容する。
-          */}
-          <div
-            ref={bodyRef}
-            className="body-html"
-            onClick={handleBodyClick}
-            dangerouslySetInnerHTML={{ __html: current.bodyHtml }}
-          />
-        </div>
       )}
     </div>
   );

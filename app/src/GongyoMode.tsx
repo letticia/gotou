@@ -65,9 +65,15 @@ type View =
 interface GongyoModeProps {
   pendingImport?: GongyoPreset | null;
   onImportHandled?: () => void;
+  /** 読誦中(=画面全体を経本にすべき状態)かどうかをAppに伝える */
+  onImmersiveChange?: (immersive: boolean) => void;
 }
 
-export default function GongyoMode({ pendingImport, onImportHandled }: GongyoModeProps = {}) {
+export default function GongyoMode({
+  pendingImport,
+  onImportHandled,
+  onImmersiveChange,
+}: GongyoModeProps = {}) {
   const unitsById = useMemo(() => loadGongyoUnits(), []);
   const builtinPresetsById = useMemo(() => loadGongyoPresets(), []);
   const [userPresets, setUserPresets] = useState<GongyoPreset[]>(() => loadUserPresets());
@@ -82,6 +88,19 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
       setView({ name: "import", preset: pendingImport });
     }
   }, [pendingImport]);
+
+  // 読誦画面(扉を過ぎた本編)だけが没入表示。扉・差定選択・編集・取り込みは
+  // 通常のクロム付き画面のまま(扉から辞書タブへ戻れる必要があるため)。
+  const immersive = view.name === "reciting" && introShown;
+  useEffect(() => {
+    onImmersiveChange?.(immersive);
+  }, [immersive, onImmersiveChange]);
+
+  // 勤行モードを抜けるとき(アンマウント時)は必ず没入を解除する。
+  // 解除し損ねるとタブバーが出ないまま辞書へ戻れなくなる。
+  useEffect(() => {
+    return () => onImmersiveChange?.(false);
+  }, [onImmersiveChange]);
 
   const userPresetsById = useMemo(() => {
     const map = new Map<string, GongyoPreset>();
@@ -310,6 +329,15 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
         "--gongyo-max-chars": Math.ceil(page.verticalMaxChars ?? verticalMaxLineLength(page.lines)),
       } as React.CSSProperties)
     : undefined;
+  // カウンター(十念等の残り回数)が出る回は本文の領域がそのぶん狭くなる。
+  // 縦書きの字送りは空き高さから決まるので、有無をCSSへ知らせる。
+  const rootClassName = [
+    "gongyo",
+    `gongyo-${orientation}`,
+    nav.counterRemaining !== null && "gongyo-has-counter",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   function handleTap() {
     setNav((prev) => advance(prev, pages));
@@ -340,7 +368,7 @@ export default function GongyoMode({ pendingImport, onImportHandled }: GongyoMod
   const bodyLines = hasEcho ? page.lines.slice(1) : page.lines;
 
   return (
-    <div className={`gongyo gongyo-${orientation}`} onClick={handleTap}>
+    <div className={rootClassName} onClick={handleTap}>
       <div className="gongyo-header">
         {nav.pageIndex > 0 && (
           <button type="button" className="gongyo-back" onClick={handleBack}>

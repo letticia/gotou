@@ -54,6 +54,8 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --tap-min: 44px;
+  /* タブバーの実高さ(アイコン+ラベル)+ホームインジケータぶんのセーフエリア */
+  --tab-bar-height: calc(50px + env(safe-area-inset-bottom, 0px));
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -299,15 +301,38 @@ body {
   color: var(--text-secondary);
 }
 
+/* 記事画面の上端。戻ると文字サイズ調整を1行にまとめる */
+.detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.detail-toolbar .font-scale-row {
+  margin-bottom: 0;
+}
+
 .back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: var(--tap-min);
+  /* アイコンの視覚的な左端を本文と揃えるため、左の余白を食い込ませる */
+  margin-left: -0.35rem;
   background: none;
   border: none;
   color: var(--accent);
   font-family: var(--font-ui);
-  font-size: 0.95em;
+  font-size: 1rem;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 0.8rem;
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .internal-link {
@@ -331,55 +356,108 @@ body {
   background: var(--bg);
 }
 
-.mode-tabs {
+/* タブバーは position: fixed なので、その高さぶんを本文側で確保しておく
+   (確保しないと一覧の最後の項目がタブバーに隠れる) */
+.shell-with-tab-bar {
+  padding-bottom: var(--tab-bar-height);
+}
+
+/* =========================================================================
+   ナビゲーションバー / タブバー
+
+   iPhoneの片手持ちを前提に、主要なモード切り替えは親指の届く画面下部
+   (タブバー)へ置く。上部のナビゲーションバーは画面名と設定への入口だけを持つ。
+   ========================================================================= */
+.nav-bar {
   display: flex;
-  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
   max-width: 640px;
   margin: 0 auto;
-  padding: var(--space-3) var(--space-5) 0;
+  padding: var(--space-2) var(--space-5);
+  box-sizing: border-box;
+  width: 100%;
 }
 
-.mode-tabs button {
-  flex: 1;
-  padding: var(--space-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.mode-tabs button.active {
-  background: var(--accent-fill);
-  border-color: var(--accent-fill);
-  color: var(--on-accent);
-}
-
-.settings-entry-row {
-  display: flex;
-  justify-content: flex-end;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: var(--space-2) var(--space-5) 0;
-}
-
-.shell-gongyo .settings-entry-row {
+.shell-gongyo .nav-bar {
   max-width: none;
-  padding: var(--space-2) var(--space-3) 0;
 }
 
-.settings-gear-button {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 50%;
+.nav-bar-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--text);
-  font-size: 1rem;
-  width: 2rem;
-  height: 2rem;
-  line-height: 1;
+}
+
+.nav-bar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  /* 見た目の余白は保ちつつタップ領域は44ptを確保するため、右端の余白を食い込ませる */
+  margin-right: calc(var(--space-2) * -1);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--accent);
   cursor: pointer;
+}
+
+.nav-bar-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-bar-button:active {
+  background: var(--fill-subtle);
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--separator);
+  /* ホームインジケータに重ならないよう、セーフエリアぶん下に余白を足す */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tab-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: var(--tap-min);
+  padding: 0.4rem 0 0.3rem;
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-bar-item svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tab-bar-item.active {
+  color: var(--accent);
 }
 
 .font-choice-select {
@@ -459,23 +537,17 @@ body {
 
 .shell-gongyo {
   background: var(--bg);
-  /* 勤行モードはページ全体をスクロールさせず、バナー・タブを除いた残りの領域に
+  /* 勤行モードはページ全体をスクロールさせず、バナー・ナビバーを除いた残りの領域に
      ぴったり収める。100vhから固定値を引く方式だと、プロトタイプ注記バナーの高さが
      画面幅で変わる(狭い画面では3行になる)ぶんだけはみ出し、カウンターや
      「おつとめ、終わりです」が画面外に押し出されてしまう。 */
   height: 100vh;
   height: 100dvh;
+  /* タブバーぶんのpadding-bottomを高さの内側に収める(border-boxが無いと
+     100dvh + タブバー高 になり、下端がはみ出す) */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-}
-
-.shell-gongyo .mode-tabs {
-  max-width: none;
-  padding: var(--space-3);
-  /* .shell-gongyoを縦flexにしたため、.mode-tabsの`margin: 0 auto`が
-     交差軸のstretchを打ち消してタブが内容幅まで縮む。幅を明示して元の見た目を保つ */
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .gongyo {
@@ -657,6 +729,21 @@ body {
   padding: var(--space-5) var(--space-6) var(--space-5) var(--space-5);
 }
 
+/* 縦書きの字送りを決める式が「本文以外に取られる高さ」として見込む値。
+   注記バナー・ヘッダー・偈文名ラベル・本文の上下パディングの合計。
+   読誦中はナビバーとタブバーを隠すため、以前の16remから詰められる。
+   375/320px幅で実測した値(カウンター無し10.2rem・ラベル2行11.86rem)に
+   わずかな余裕を足している。過大に見積もると字が小さくなるだけだが、
+   過小だと1列に収まらず左の列へあふれて列数が狂うため、安全側に倒す。 */
+.gongyo-vertical {
+  --gongyo-chrome: 12rem;
+}
+
+/* カウンター(十念等)が出る回は、その表示ぶん本文の領域が狭くなる(実測14.14rem) */
+.gongyo-vertical.gongyo-has-counter {
+  --gongyo-chrome: 14.5rem;
+}
+
 .gongyo-vertical .gongyo-lines {
   writing-mode: vertical-rl;
   /* 列が画面の高さいっぱいを使えるようにする(min-height:0が無いと
@@ -719,7 +806,7 @@ body {
     /* 高さの制約にだけ下限を設ける。一枚起請文(114字)のような長文を1列に
        押し込もうとすると数pxまで縮んで読めなくなるため、下限で止めて
        左隣の列へ折り返させる(折り返しは.gongyo-linesのalign-items:stretchによる) */
-    max(1.2rem, calc((100dvh - 16rem) / var(--gongyo-max-chars, 1)))
+    max(1.2rem, calc((100dvh - var(--gongyo-chrome)) / var(--gongyo-max-chars, 1)))
   );
 }
 
@@ -735,7 +822,7 @@ body {
 
 /* エコー行は本文より一段小さくして、続きの目印であることを見た目でも区別する */
 .gongyo-vertical .gongyo-line-dimmed {
-  font-size: max(0.9rem, min(1.6rem, calc((100dvh - 16rem) / var(--gongyo-max-chars, 1))));
+  font-size: max(0.9rem, min(1.6rem, calc((100dvh - var(--gongyo-chrome)) / var(--gongyo-max-chars, 1))));
 }
 
 
