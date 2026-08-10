@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "tanagyo-shinbo",
-  "name": "棚経(新亡回向)",
+  "name": "棚経（新亡回向）",
   "items": [
     { "unit": "sanbujo" },
     { "unit": "sangege" },

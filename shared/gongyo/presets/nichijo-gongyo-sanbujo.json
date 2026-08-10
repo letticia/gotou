@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "nichijo-gongyo-sanbujo",
-  "name": "日常勤行式(三奉請・三身礼版)",
+  "name": "日常勤行式（三奉請・三身礼版）",
   "items": [
     { "unit": "koge" },
     { "unit": "sanborai" },

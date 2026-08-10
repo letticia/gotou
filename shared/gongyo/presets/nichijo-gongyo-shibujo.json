@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "nichijo-gongyo-shibujo",
-  "name": "日常勤行式(四奉請・三唱礼版)",
+  "name": "日常勤行式（四奉請・三唱礼版）",
   "items": [
     { "unit": "koge" },
     { "unit": "sanborai" },
