@@ -345,6 +345,12 @@ export default function GongyoMode({
     .join(" ");
 
   function handleTap() {
+    // 最終ページまで読み終えた後のタップはこれ以上進めず行き止まりになるため、
+    // 差定選択へ導く(選択画面はタブバーが出るので辞書へも移動しやすい)
+    if (isFinished) {
+      setView({ name: "picker" });
+      return;
+    }
     setNav((prev) => advance(prev, pages));
   }
 
