@@ -406,7 +406,15 @@ export default function GongyoMode({
         <span className="gongyo-unit-title">{page.unitTitle}</span>
       </div>
       <div className="gongyo-body">
-        <div className={linesClassName} style={linesStyle}>
+        {/* key=pageIndexで各ページを別要素として強制的に作り直す。paginated unit(誦経等)は
+            ページごとの行数が同じことが多く、renderLineのkey(0,1,2...)だけでは
+            Reactが既存のDOMノードを使い回してテキストだけ差し替える形になる。
+            iPhone Safariはこの「同一要素内でのテキスト差し替え」を、縦書き
+            (writing-mode: vertical-rl)+ネストしたflexという構成では正しく再描画
+            しないことがあり、ページ送り後も画面下部に前のページの残像が残る
+            不具合が報告された。要素ごと作り直せばSafariが必ず新規に描画するため
+            この種の再描画漏れを避けられる。 */}
+        <div key={nav.pageIndex} className={linesClassName} style={linesStyle}>
           {hasEcho ? (
             <>
               {renderLine(echoLine!, 0)}

@@ -265,6 +265,18 @@
   実際にスマホで書籍を撮影した写真ではさらに悪化すると見るべき。代替として
   部首・画数引きや手書き入力を検討する方向に転換した(実データも大辞典由来データも
   一切使わず、自前でレンダリングした一般的な仏教語のみで検証している)。
+- **iPhoneのSafariで、誦経等paginated unitのページ送り時に本文の一部(画面下側)が
+  前ページの残像のまま更新されない不具合が報告された(2026-08-10)**。原因は
+  `GongyoMode.tsx`の`.gongyo-lines`直下の行要素がpage.lines内の位置(0,1,2...)を
+  keyにしていたため、ページごとの行数が同じ場合Reactが既存DOMノードを再利用して
+  テキストだけ差し替える形になっていたこと。縦書き(`writing-mode: vertical-rl`)+
+  ネストしたflex(`.gongyo-line-group`・`height: max-content`等)という構成で、
+  iPhone Safariはこの「同一要素内でのテキスト差し替え」を正しく再描画しないことが
+  ある。`.gongyo-lines`に`key={nav.pageIndex}`を付けてページごとに要素ごと
+  作り直すよう変更して解決(この種のブラウザ固有の再描画バグは、Reactのkeyで
+  要素を強制的に作り直すのが最も確実な回避策になりやすい)。
+  **この開発機にはXcodeがフルインストールされておらずiOS Simulatorが使えないため、
+  実機Safariでの再現・検証はできていない。**開発者による実機確認が必要。
 - Service Workerの事前キャッシュ(`PRECACHE_URLS`)にHTMLシェル・manifest・アイコンしか
   入っていないと、`vite build`が生成するハッシュ付きJS/CSS・SQLite wasm/ワーカースクリプトは
   「一度オンラインで実際にリクエストされた」ときに`cacheFirstRuntimeCache`が後追いで
