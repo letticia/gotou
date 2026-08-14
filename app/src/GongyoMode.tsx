@@ -366,10 +366,17 @@ export default function GongyoMode({
     const className = ["gongyo-line", line.dimmed && "gongyo-line-dimmed", ruby && "gongyo-line-has-ruby"]
       .filter(Boolean)
       .join(" ");
+    // 陀羅尼等、結合句を全角スペースで区切ったテキストは、区切り位置でのみ
+    // 改行させたい(#3)。一方、一枚起請文等の地の文には区切りの全角スペースが
+    // 無く、これをスペース基準の改行と同じ扱いにすると長文全体が改行不能な
+    // 1単語とみなされ、はみ出た際に句読点が行頭に取り残される禁則違反が
+    // 起きていた(2026-08、iPhone Airで発見)。全角スペースの有無で切り替える
+    const textClassName = line.text.includes("　") ? "gongyo-text gongyo-text-grouped" : "gongyo-text";
+    const rubyClassName = ruby?.includes("　") ? "gongyo-ruby gongyo-ruby-grouped" : "gongyo-ruby";
     return (
       <div key={absoluteIndex} className={className}>
-        {ruby && <p className="gongyo-ruby">{ruby}</p>}
-        <p className="gongyo-text">{line.text}</p>
+        {ruby && <p className={rubyClassName}>{ruby}</p>}
+        <p className={textClassName}>{line.text}</p>
       </div>
     );
   }

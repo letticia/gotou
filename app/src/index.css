@@ -756,8 +756,19 @@ body {
   font-family: var(--font-content);
   font-size: 1.2rem;
   margin: 0;
-  /* 本文と同じく、結合句の区切り(全角スペース)で優先的に折り返す(#3) */
+  /* 句読点が行頭に来ないようにする(#7)。結合句(全角スペース区切り)の
+     場合は.gongyo-ruby-groupedがword-break:keep-allで上書きする */
+  line-break: strict;
+}
+
+/* 陀羅尼等、結合句を全角スペースで区切ったテキスト専用。区切り位置でのみ
+   改行させたい(#3)ため、GongyoMode.tsxがtextに全角スペースを含む行にだけ
+   このクラスを付与する。区切り内の語がそのまま収まらない場合にoverflow-wrapが
+   強制的に割り込むが、既存の結合句はいずれも短く収まるため実際には起きない */
+.gongyo-ruby-grouped,
+.gongyo-text-grouped {
   word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .gongyo-text {
@@ -766,10 +777,14 @@ body {
   font-weight: bold;
   line-height: 1.4;
   margin: 0;
-  /* 陀羅尼等ひらがな主体の長文で、任意の文字間ではなく既存の全角スペースの
-     位置でのみ改行させる(CJKの既定は任意の文字間で改行できてしまうため) */
-  word-break: keep-all;
-  overflow-wrap: break-word;
+  /* 一枚起請文等の地の文には区切りの全角スペースが無い。これをword-break:
+     keep-all(陀羅尼向け)のまま長文表示すると、全体が改行不能な1単語と
+     みなされ、はみ出た際にoverflow-wrapが禁則(句読点の行頭配置禁止)を
+     無視して強制的に途中で折り返してしまい、「。」だけが行頭に取り残される
+     不具合があった(2026-08、iPhone Airで発見)。既定は通常のCJK改行
+     (任意の文字間で可・禁則は守る)にしておき、結合句だけ.gongyo-text-grouped
+     でkeep-allに切り替える */
+  line-break: strict;
 }
 
 .gongyo-counter {
