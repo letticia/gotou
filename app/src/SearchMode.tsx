@@ -277,6 +277,7 @@ export default function SearchMode() {
             onClick={handleBodyClick}
             dangerouslySetInnerHTML={{ __html: current.bodyHtml }}
           />
+          <p className="entry-source">出典: 浄土宗大辞典(非公式・本アプリ独自の変換による表示です)</p>
         </div>
       </div>
     );

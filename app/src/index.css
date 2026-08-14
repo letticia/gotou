@@ -293,6 +293,15 @@ body {
   line-height: 1.85;
 }
 
+.entry-source {
+  margin: 1.4em 0 0.4em;
+  padding-top: 0.8em;
+  border-top: 1px solid var(--separator);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
 .body-html p {
   margin: 0 0 0.8em;
 }
@@ -581,6 +590,52 @@ body {
   /* iOSのセル右側の値と同じ見え方にする(枠を持たせない) */
   padding: var(--space-2) 0;
   cursor: pointer;
+}
+
+.settings-row-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.settings-row-button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.settings-subhead {
+  margin: var(--space-5) var(--space-1) var(--space-2);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.settings-textblock {
+  padding: var(--space-3) var(--space-4);
+}
+
+.settings-body-text {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.settings-body-text a {
+  color: var(--accent);
 }
 
 .settings-footnote {

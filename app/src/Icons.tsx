@@ -58,3 +58,12 @@ export function ChevronLeftIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** 遷移先があることを示す右向きのシェブロン(設定行の開示インジケータ) */
+export function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg {...COMMON} strokeWidth={2} className={className}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}

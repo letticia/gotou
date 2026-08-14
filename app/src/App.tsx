@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
 import SettingsScreen from "./SettingsScreen";
+import AboutScreen from "./AboutScreen";
 import { BookIcon, FlameIcon, GearIcon } from "./Icons";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
@@ -18,6 +19,7 @@ const FALLBACK_FONT_STACK = 'system-ui, -apple-system, "Hiragino Sans", sans-ser
 export default function App() {
   const [mode, setMode] = useState<Mode>("search");
   const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
   // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
@@ -84,13 +86,18 @@ export default function App() {
         </div>
       )}
       {showSettings ? (
-        <SettingsScreen
-          fontChoice={fontChoice}
-          onFontChange={handleFontChange}
-          counterMode={counterMode}
-          onCounterModeChange={handleCounterModeChange}
-          onClose={() => setShowSettings(false)}
-        />
+        showAbout ? (
+          <AboutScreen onClose={() => setShowAbout(false)} />
+        ) : (
+          <SettingsScreen
+            fontChoice={fontChoice}
+            onFontChange={handleFontChange}
+            counterMode={counterMode}
+            onCounterModeChange={handleCounterModeChange}
+            onClose={() => setShowSettings(false)}
+            onOpenAbout={() => setShowAbout(true)}
+          />
+        )
       ) : (
         <>
           {!immersive && (

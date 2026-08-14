@@ -1,4 +1,4 @@
-import { ChevronLeftIcon } from "./Icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
 import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
 import type { FontChoice } from "./lib/fontChoice";
 import { FONT_LABELS } from "./lib/fontChoice";
@@ -9,6 +9,7 @@ interface SettingsScreenProps {
   counterMode: GongyoCounterMode;
   onCounterModeChange: (mode: GongyoCounterMode) => void;
   onClose: () => void;
+  onOpenAbout: () => void;
 }
 
 export default function SettingsScreen({
@@ -17,6 +18,7 @@ export default function SettingsScreen({
   counterMode,
   onCounterModeChange,
   onClose,
+  onOpenAbout,
 }: SettingsScreenProps) {
   return (
     <div className="settings-screen">
@@ -66,6 +68,13 @@ export default function SettingsScreen({
         十念・三唱礼は既定では名前を1回示すだけで次へ進みます。回数を数えながら
         唱えたい場合は切り替えてください。
       </p>
+
+      <section className="settings-group">
+        <button type="button" className="settings-row-button" onClick={onOpenAbout}>
+          <span className="settings-row-label">このアプリについて</span>
+          <ChevronRightIcon />
+        </button>
+      </section>
     </div>
   );
 }
