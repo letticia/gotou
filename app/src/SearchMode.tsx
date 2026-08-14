@@ -240,6 +240,9 @@ export default function SearchMode() {
         {fontScaleRow}
         <div className="download-prompt">
           <p className="empty">辞書データをダウンロードします。</p>
+          <p className="download-source-note">
+            浄土宗大辞典(jodoshuzensho.jp/daijiten/)のデータを取得します。本アプリは非公式です。
+          </p>
           <button
             type="button"
             className="download-start-button"

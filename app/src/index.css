@@ -257,6 +257,14 @@ body {
   gap: 0.8rem;
 }
 
+.download-source-note {
+  margin: -0.4rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
 .download-start-button {
   padding: 0.6rem 1.2rem;
   background: var(--accent-fill);
