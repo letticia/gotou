@@ -275,8 +275,8 @@
   ある。`.gongyo-lines`に`key={nav.pageIndex}`を付けてページごとに要素ごと
   作り直すよう変更して解決(この種のブラウザ固有の再描画バグは、Reactのkeyで
   要素を強制的に作り直すのが最も確実な回避策になりやすい)。
-  **この開発機にはXcodeがフルインストールされておらずiOS Simulatorが使えないため、
-  実機Safariでの再現・検証はできていない。**開発者による実機確認が必要。
+  この開発機にはXcodeがフルインストールされておらずiOS Simulatorが使えなかったため
+  当初は実機未検証だったが、開発者が実機Safariで確認済み(2026-08-16、解決確認)。
 - Service Workerの事前キャッシュ(`PRECACHE_URLS`)にHTMLシェル・manifest・アイコンしか
   入っていないと、`vite build`が生成するハッシュ付きJS/CSS・SQLite wasm/ワーカースクリプトは
   「一度オンラインで実際にリクエストされた」ときに`cacheFirstRuntimeCache`が後追いで
