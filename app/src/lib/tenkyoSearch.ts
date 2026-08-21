@@ -62,6 +62,21 @@ export function searchDictionaryByClauses(
   );
 }
 
+/** 収録差定名の表示上限。十念のようにほぼ全ての差定に現れる偈文だと
+ *  名前が5つ並んで一覧の見通しが悪くなるため、先頭数件＋「ほかN件」に畳む */
+const PRESET_NAMES_SHOWN = 2;
+
+/**
+ * 収録差定名を一覧表示用の1行にまとめる。
+ * 差定名自体が「日常勤行式（三奉請・三身礼版）」のように「・」を含むため、
+ * 名前どうしの区切りには「、」を使う(「・」だと境界が読み取れない)。
+ */
+export function formatPresetNames(names: string[], maxShown = PRESET_NAMES_SHOWN): string {
+  if (names.length === 0) return "";
+  if (names.length <= maxShown) return names.join("、");
+  return `${names.slice(0, maxShown).join("、")} ほか${names.length - maxShown}件`;
+}
+
 /** その偈文を収録している差定名を preset.items から逆引きする */
 function presetNamesForUnit(unitId: string, presets: Map<string, GongyoPreset>): string[] {
   const names: string[] = [];

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { searchDictionaryByClauses, searchGongyoByClauses } from "./tenkyoSearch";
+import {
+  formatPresetNames,
+  searchDictionaryByClauses,
+  searchGongyoByClauses,
+} from "./tenkyoSearch";
 import type { GongyoPreset, GongyoUnit } from "./gongyo";
 import type { SearchRow } from "./db";
 
@@ -128,5 +132,30 @@ describe("searchGongyoByClauses", () => {
 
   it("returns an empty array for empty input", () => {
     expect(searchGongyoByClauses("", [], units, presets)).toEqual([]);
+  });
+});
+
+describe("formatPresetNames", () => {
+  it("joins names with 、 because preset names themselves contain ・", () => {
+    expect(formatPresetNames(["日常勤行式（三奉請・三身礼版）", "棚経（新亡回向）"])).toBe(
+      "日常勤行式（三奉請・三身礼版）、棚経（新亡回向）",
+    );
+  });
+
+  it("collapses a long list into the first few plus a remainder count", () => {
+    expect(formatPresetNames(["甲", "乙", "丙", "丁", "戊"])).toBe("甲、乙 ほか3件");
+  });
+
+  it("does not add a remainder when the list fits", () => {
+    expect(formatPresetNames(["甲", "乙"])).toBe("甲、乙");
+    expect(formatPresetNames(["甲"])).toBe("甲");
+  });
+
+  it("honours a custom limit", () => {
+    expect(formatPresetNames(["甲", "乙", "丙"], 1)).toBe("甲 ほか2件");
+  });
+
+  it("returns an empty string when the unit belongs to no preset", () => {
+    expect(formatPresetNames([])).toBe("");
   });
 });

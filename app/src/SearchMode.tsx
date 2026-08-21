@@ -21,7 +21,11 @@ import {
   markExternalLinkNoticeSeen,
 } from "./lib/externalLinks";
 import { buildJozenKeyword, extractClauses } from "./lib/tenkyoNormalize";
-import { searchDictionaryByClauses, searchGongyoByClauses } from "./lib/tenkyoSearch";
+import {
+  formatPresetNames,
+  searchDictionaryByClauses,
+  searchGongyoByClauses,
+} from "./lib/tenkyoSearch";
 import { JOZEN_SEARCH_ACTION, submitJozenSearch } from "./lib/jozenSearch";
 import { loadGongyoPresets, loadGongyoUnits } from "./lib/gongyo";
 import {
@@ -492,7 +496,7 @@ export default function SearchMode() {
                     {hit.lineRuby && <p className="tenkyo-gongyo-ruby">{hit.lineRuby}</p>}
                     <p className="tenkyo-gongyo-source">
                       {hit.unitTitle}
-                      {hit.presetNames.length > 0 && `(${hit.presetNames.join("・")})`}
+                      {hit.presetNames.length > 0 && `(${formatPresetNames(hit.presetNames)})`}
                     </p>
                   </li>
                 ))}
