@@ -301,6 +301,40 @@ body {
   line-height: 1.85;
 }
 
+/* 一時的な通知。タブバーの上に重ねる(下端はホームインジケータと衝突するため) */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-bar-height) + var(--space-4));
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: min(90vw, 22rem);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--text) 88%, transparent);
+  color: var(--bg);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 25%);
+  /* 中央寄せに translateX(-50%) を使うため、transformを触る汎用の
+     gotou-fade-in は使えない(アニメーション側のtransformで上書きされ、
+     右にずれる)。X方向の移動量を保ったまま動く専用のキーフレームを使う。 */
+  animation: gotou-toast-in 0.18s ease-out;
+}
+
+@keyframes gotou-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 .entry-source {
   margin: 1.4em 0 0.4em;
   padding-top: 0.8em;
@@ -328,6 +362,18 @@ body {
 
 .body-html .external-link {
   color: var(--accent);
+}
+
+/* 典拠リンク(浄全DB・SAT大正蔵)。本文から原典へ渡る導線なので、
+   アプリ内リンクと区別できるよう外部へ出ることを示す矢印を添える。
+   本文はdangerouslySetInnerHTML由来でReactコンポーネントを挿せないため、
+   Icons.tsxのインラインSVGではなくCSSの::afterで表現している。 */
+.body-html .tenkyo-link::after {
+  content: "↗";
+  margin-left: 0.1em;
+  font-size: 0.75em;
+  vertical-align: 0.2em;
+  color: var(--text-tertiary);
 }
 
 .body-html table.wikitable {

@@ -16,6 +16,11 @@ import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
 import {
+  externalLinkConfirmMessage,
+  hasSeenExternalLinkNotice,
+  markExternalLinkNoticeSeen,
+} from "./lib/externalLinks";
+import {
   FONT_SCALE_STEPS,
   canDecrease,
   canIncrease,
@@ -46,6 +51,8 @@ export default function SearchMode() {
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
   const [scaleIndex, setScaleIndex] = useState(() => loadScaleIndex());
+  // 一時的な通知(オフライン時に外部リンクを踏んだ場合など)。数秒で自動的に消す
+  const [toast, setToast] = useState<string | null>(null);
 
   // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
   // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
@@ -192,15 +199,49 @@ export default function SearchMode() {
   }
 
   function handleBodyClick(event: React.MouseEvent<HTMLDivElement>) {
-    const link = (event.target as HTMLElement).closest("a.internal-link");
-    if (!link) return;
-    event.preventDefault();
-    const href = link.getAttribute("href");
-    const targetId = href ? parseInternalLinkTarget(href) : null;
-    if (targetId !== null) {
-      navigateTo(targetId);
+    const target = event.target as HTMLElement;
+
+    const link = target.closest("a.internal-link");
+    if (link) {
+      event.preventDefault();
+      const href = link.getAttribute("href");
+      const targetId = href ? parseInternalLinkTarget(href) : null;
+      if (targetId !== null) {
+        navigateTo(targetId);
+      }
+      return;
     }
+
+    // 外部リンク(浄全DB・SATへの典拠リンクを含む)。
+    // 既定の遷移に任せると、ホーム画面に追加したPWA(standalone表示)では
+    // アプリ自身が外部サイトに置き換わり、ブラウザのUIも無いため戻る手段が無くなる。
+    // 必ず新しいタブで開いて、読誦・検索の文脈を残す(docs/tenkyo-spec.md A-2)。
+    const external = target.closest("a.external-link");
+    if (!external) return;
+    event.preventDefault();
+    const href = external.getAttribute("href");
+    if (!href) return;
+
+    // 典拠DBは外部サイトなのでオフラインでは開けない。踏んでから気付けるようにする
+    // (存在確認のための事前リクエストはしない、という掟に沿う)。
+    if (!navigator.onLine) {
+      setToast("オフラインです。オンライン時にご利用ください");
+      return;
+    }
+
+    if (!hasSeenExternalLinkNotice()) {
+      if (!window.confirm(externalLinkConfirmMessage(href))) return;
+      markExternalLinkNoticeSeen();
+    }
+
+    window.open(href, "_blank", "noopener");
   }
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // 記事画面は検索結果一覧と入れ替わりで表示される(プッシュ遷移)ため、
   // 記事を開く・記事間を移動するたびに画面先頭から読み始められるようにする。
@@ -282,6 +323,11 @@ export default function SearchMode() {
           />
           <p className="entry-source">出典: 浄土宗大辞典(非公式・本アプリ独自の変換による表示です)</p>
         </div>
+        {toast && (
+          <div className="toast" role="status">
+            {toast}
+          </div>
+        )}
       </div>
     );
   }
