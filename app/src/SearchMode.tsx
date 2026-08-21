@@ -20,6 +20,10 @@ import {
   hasSeenExternalLinkNotice,
   markExternalLinkNoticeSeen,
 } from "./lib/externalLinks";
+import { buildJozenKeyword, extractClauses } from "./lib/tenkyoNormalize";
+import { searchDictionaryByClauses, searchGongyoByClauses } from "./lib/tenkyoSearch";
+import { JOZEN_SEARCH_ACTION, submitJozenSearch } from "./lib/jozenSearch";
+import { loadGongyoPresets, loadGongyoUnits } from "./lib/gongyo";
 import {
   FONT_SCALE_STEPS,
   canDecrease,
@@ -27,6 +31,13 @@ import {
   loadScaleIndex,
   saveScaleIndex,
 } from "./lib/dictFontScale";
+
+/** 見出し語で引く(既定) / 一節から典拠をさがす(逆引き。docs/tenkyo-spec.md B) */
+type QueryMode = "headword" | "tenkyo";
+
+// 勤行テキストはimport.meta.globのeager読み込みなので、モジュール初期化時に一度だけ作る
+const gongyoUnits = loadGongyoUnits();
+const gongyoPresets = loadGongyoPresets();
 
 type LoadState =
   | { status: "checking" }
@@ -53,6 +64,7 @@ export default function SearchMode() {
   const [scaleIndex, setScaleIndex] = useState(() => loadScaleIndex());
   // 一時的な通知(オフライン時に外部リンクを踏んだ場合など)。数秒で自動的に消す
   const [toast, setToast] = useState<string | null>(null);
+  const [queryMode, setQueryMode] = useState<QueryMode>("headword");
 
   // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
   // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
@@ -174,9 +186,28 @@ export default function SearchMode() {
 
   const normalizedQuery = useMemo(() => normalizeSearchInput(query.trim()), [query]);
   const results = useMemo(() => {
-    if (!db || !normalizedQuery) return [];
+    if (!db || !normalizedQuery || queryMode !== "headword") return [];
     return db.searchByPrefix(normalizedQuery);
-  }, [db, normalizedQuery]);
+  }, [db, normalizedQuery, queryMode]);
+
+  // --- 逆引き典拠検索(docs/tenkyo-spec.md B) ---
+  // 句読点で分割した句ごとに部分一致を取る。一節をまるごと句読点除去して引くと
+  // 本文側の句読点と食い違って当たらなくなるため、除去はしない(B-1の実測参照)。
+  const clauses = useMemo(
+    () => (queryMode === "tenkyo" ? extractClauses(query) : []),
+    [query, queryMode],
+  );
+  const dictionaryHits = useMemo(() => {
+    if (!db || clauses.length === 0) return [];
+    return searchDictionaryByClauses(clauses, (needle, limit) =>
+      db.searchTextContains(needle, limit),
+    );
+  }, [db, clauses]);
+  const gongyoHits = useMemo(() => {
+    if (clauses.length === 0) return [];
+    return searchGongyoByClauses(query, clauses, gongyoUnits, gongyoPresets);
+  }, [query, clauses]);
+
   const current = db && currentId !== null ? db.getEntry(currentId) : null;
 
   function navigateTo(id: number) {
@@ -222,6 +253,15 @@ export default function SearchMode() {
     const href = external.getAttribute("href");
     if (!href) return;
 
+    guardExternalNavigation(href, () => window.open(href, "_blank", "noopener"));
+  }
+
+  /**
+   * 外部サイトへ出る前の共通の関門。典拠リンクのタップと浄全DB検索(POST送信)の
+   * 両方が必ずここを通る。POST送信はwindow.openを経由しないので、素通りさせないよう
+   * 呼び出し側で明示的に通すこと(docs/tenkyo-spec.md B-3)。
+   */
+  function guardExternalNavigation(href: string, proceed: () => void) {
     // 典拠DBは外部サイトなのでオフラインでは開けない。踏んでから気付けるようにする
     // (存在確認のための事前リクエストはしない、という掟に沿う)。
     if (!navigator.onLine) {
@@ -234,7 +274,13 @@ export default function SearchMode() {
       markExternalLinkNoticeSeen();
     }
 
-    window.open(href, "_blank", "noopener");
+    proceed();
+  }
+
+  function handleJozenSearch() {
+    const keyword = buildJozenKeyword(query);
+    if (!keyword) return;
+    guardExternalNavigation(JOZEN_SEARCH_ACTION, () => submitJozenSearch(keyword));
   }
 
   useEffect(() => {
@@ -242,6 +288,14 @@ export default function SearchMode() {
     const timer = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  // 記事画面・一覧画面のどちらからも外部サイトへ出られる(記事本文の典拠リンクと、
+  // 逆引きの浄全DB検索ボタン)。どちらの画面でもトーストが出るよう共通化する。
+  const toastElement = toast ? (
+    <div className="toast" role="status">
+      {toast}
+    </div>
+  ) : null;
 
   // 記事画面は検索結果一覧と入れ替わりで表示される(プッシュ遷移)ため、
   // 記事を開く・記事間を移動するたびに画面先頭から読み始められるようにする。
@@ -323,11 +377,7 @@ export default function SearchMode() {
           />
           <p className="entry-source">出典: 浄土宗大辞典(非公式・本アプリ独自の変換による表示です)</p>
         </div>
-        {toast && (
-          <div className="toast" role="status">
-            {toast}
-          </div>
-        )}
+        {toastElement}
       </div>
     );
   }
@@ -336,15 +386,26 @@ export default function SearchMode() {
     <div className="app">
       {fontScaleRow}
       <div className="search-input-wrapper">
-        <input
-          ref={queryInputRef}
-          autoFocus
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="読みまたは見出し語で検索"
-          className="search-input"
-        />
+        {queryMode === "tenkyo" ? (
+          // 逆引きは一節をまるごと貼る前提なので複数行にする
+          <textarea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="一節を貼り付け(法語・偈文・引用文)"
+            className="search-input search-input-multiline"
+            rows={3}
+          />
+        ) : (
+          <input
+            ref={queryInputRef}
+            autoFocus
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="読みまたは見出し語で検索"
+            className="search-input"
+          />
+        )}
         {query && (
           <button
             type="button"
@@ -359,6 +420,24 @@ export default function SearchMode() {
           </button>
         )}
       </div>
+      <div className="query-mode-toggle" role="group" aria-label="検索の種類">
+        <button
+          type="button"
+          className={queryMode === "headword" ? "active" : undefined}
+          aria-pressed={queryMode === "headword"}
+          onClick={() => setQueryMode("headword")}
+        >
+          見出し語で引く
+        </button>
+        <button
+          type="button"
+          className={queryMode === "tenkyo" ? "active" : undefined}
+          aria-pressed={queryMode === "tenkyo"}
+          onClick={() => setQueryMode("tenkyo")}
+        >
+          一節から典拠をさがす
+        </button>
+      </div>
       {loadState.status === "checking" && <p className="empty">辞書データを確認中…</p>}
       {loadState.status === "acquiring" && (
         <div className="download-progress">
@@ -366,19 +445,83 @@ export default function SearchMode() {
         </div>
       )}
       {loadState.status === "error" && <p className="empty error">{loadState.message}</p>}
-      <ul className="result-list">
-        {results.map((entry) => (
-          <li key={entry.id}>
-            <button type="button" onClick={() => navigateTo(entry.id)}>
-              <span className="title">{entry.title}</span>
-              <span className="reading">{entry.reading}</span>
+
+      {queryMode === "headword" ? (
+        <>
+          <ul className="result-list">
+            {results.map((entry) => (
+              <li key={entry.id}>
+                <button type="button" onClick={() => navigateTo(entry.id)}>
+                  <span className="title">{entry.title}</span>
+                  <span className="reading">{entry.reading}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {db && query && results.length === 0 && (
+            <p className="empty">該当する項目がありません</p>
+          )}
+        </>
+      ) : (
+        <>
+          <section className="preset-section">
+            <h3>辞書の項目</h3>
+            {dictionaryHits.length > 0 ? (
+              <ul className="result-list">
+                {dictionaryHits.map((hit) => (
+                  <li key={hit.id}>
+                    <button type="button" onClick={() => navigateTo(hit.id)}>
+                      <span className="title">{hit.title}</span>
+                      <span className="reading">{hit.reading}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty">{clauses.length === 0 ? "一節を入力してください" : "見つかりませんでした"}</p>
+            )}
+          </section>
+
+          <section className="preset-section">
+            <h3>勤行テキスト</h3>
+            {gongyoHits.length > 0 ? (
+              <ul className="tenkyo-gongyo-list">
+                {gongyoHits.map((hit) => (
+                  <li key={`${hit.unitId}-${hit.lineIndex}`}>
+                    <p className="tenkyo-gongyo-line">{hit.lineText}</p>
+                    {hit.lineRuby && <p className="tenkyo-gongyo-ruby">{hit.lineRuby}</p>}
+                    <p className="tenkyo-gongyo-source">
+                      {hit.unitTitle}
+                      {hit.presetNames.length > 0 && `(${hit.presetNames.join("・")})`}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="empty">
+                {clauses.length === 0 ? "一節を入力してください" : "見つかりませんでした"}
+              </p>
+            )}
+          </section>
+
+          <section className="preset-section">
+            <h3>浄土宗全書テキストデータベース(外部)</h3>
+            <p className="tenkyo-jozen-note">
+              手元の辞書と勤行テキストに無い場合は、浄土宗全書の全文を検索できます。
+              外部サイトが新しいタブで開きます。
+            </p>
+            <button
+              type="button"
+              className="tenkyo-jozen-button"
+              disabled={!buildJozenKeyword(query)}
+              onClick={handleJozenSearch}
+            >
+              浄土宗全書で検索
             </button>
-          </li>
-        ))}
-      </ul>
-      {db && query && results.length === 0 && (
-        <p className="empty">該当する項目がありません</p>
+          </section>
+        </>
       )}
+      {toastElement}
     </div>
   );
 }
