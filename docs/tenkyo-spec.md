@@ -108,6 +108,32 @@
     検索語を入れて `submit()` する(トップレベル遷移なのでCORSの制約を受けない)。
 - いずれもユーザーのタップ1回につき1遷移。結果の取得・解析・保存はしない。
 
+#### B-3 事前検証の結果(2026-08-16実施)
+
+**結論: POST専用。hidden form 自動POST方式で確定。**
+
+トップページ(`https://jodoshuzensho.jp/jozensearch_post/`)のフォーム定義:
+
+| 項目 | 値 |
+| --- | --- |
+| method | `POST` |
+| action | `search/connect_jozen_DB.php`(相対。絶対URLは `https://jodoshuzensho.jp/jozensearch_post/search/connect_jozen_DB.php`) |
+| 検索語フィールド | `keywd`(`type="text"`) |
+| hidden項目 | **無し** |
+| 巻選択等のフィールド | **無し**(簡易検索は全巻検索が既定) |
+
+- GETで同じURLに `?keywd=...` を付けても、結果ページの枠は200で返るが
+  「検索対象：()」「検索結果：全0件」となり検索語が取り込まれない。
+  サーバー側が `$_POST['keywd']` のみを読んでいるため、**GET方式は使えない**。
+- POSTでは正常に動作することを確認(検索語「十念」で全4628件、結果一覧に
+  `detail.php?lineno=J01_0007A14` 形式のリンクが並ぶ)。この `lineno` は
+  上記「浄全DBの外部仕様」の定義(J+巻2桁+`_`+頁4桁+段+行2桁)と完全に一致する。
+- 実装方針: 画面外の `<form method="POST" action="(上記絶対URL)" target="_blank">`
+  に `keywd` 1フィールドだけを入れて `submit()` する。hidden項目が無いため
+  フォームは最小構成で足りる。
+- 検証は合計3リクエスト(トップpage取得・GET試行・POST試行)で完了。
+  以後この検証を再実行しないこと。
+
 ### B-4 schema v2(フェーズ2・任意)
 
 - `entries_fts` に `body_text_norm`(variants.json正規化済み本文)を追加し、
