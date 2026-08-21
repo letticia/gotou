@@ -90,6 +90,53 @@ describe("cleanWikitext", () => {
     );
   });
 
+  // --- 典拠リンク(docs/tenkyo-spec.md A-1) ---------------------------------
+  // factory/tests/test_wikitext.py の同名ケースと対応させること。
+  // URLの形は本物だが、記事本文は一切使わず自作のダミー文で組み立てている。
+
+  it("marks a Jozen DB link as a tenkyo link and upgrades it to https", () => {
+    const html = cleanWikitext(
+      "[http://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=J09_0508 浄全九・五〇八上]",
+      emptyMap,
+    );
+    expect(html).toBe(
+      '<p><a class="external-link tenkyo-link" href="https://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=J09_0508">浄全九・五〇八上</a></p>',
+    );
+  });
+
+  it("marks a SAT link as a tenkyo link and upgrades it to https", () => {
+    const html = cleanWikitext(
+      "[http://21dzk.l.u-tokyo.ac.jp/SAT2018/V51.0861a.html 正蔵五一・八六一上]",
+      emptyMap,
+    );
+    expect(html).toBe(
+      '<p><a class="external-link tenkyo-link" href="https://21dzk.l.u-tokyo.ac.jp/SAT2018/V51.0861a.html">正蔵五一・八六一上</a></p>',
+    );
+  });
+
+  it("leaves a non-tenkyo external link unmarked and does not rewrite its scheme", () => {
+    const html = cleanWikitext("[http://example.com/foo 例]", emptyMap);
+    expect(html).toBe('<p><a class="external-link" href="http://example.com/foo">例</a></p>');
+  });
+
+  it("marks a bare tenkyo link and displays the upgraded URL", () => {
+    const html = cleanWikitext(
+      "[http://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=Z15_0203]",
+      emptyMap,
+    );
+    expect(html).toBe(
+      '<p><a class="external-link tenkyo-link" href="https://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=Z15_0203">https://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=Z15_0203</a></p>',
+    );
+  });
+
+  it("marks an auto-linked raw tenkyo URL", () => {
+    const html = cleanWikitext(
+      "参照 https://21dzk.l.u-tokyo.ac.jp/SAT2018/V39.0586b.html",
+      emptyMap,
+    );
+    expect(html).toContain('class="external-link tenkyo-link"');
+  });
+
   it("converts a bullet list without wrapping it in a paragraph", () => {
     const html = cleanWikitext("* 項目1\n* 項目2", emptyMap);
     expect(html).toBe("<ul>\n<li>項目1</li>\n<li>項目2</li>\n</ul>");

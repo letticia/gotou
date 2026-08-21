@@ -82,6 +82,25 @@ def build_wikitext(i, titles):
     if i % 9 == 0:
         body_parts.append(f"http://example.com/bare{i:03d}")
 
+    # 典拠リンク(docs/tenkyo-spec.md A-1 の tenkyo-link 判定・A-2の表示確認用)。
+    # URLの形だけ本物の浄全DB・SATに合わせ、巻・頁は自作のダミー値。
+    # 大辞典の記述は一切使っていない。
+    if i % 7 == 0:
+        vol = i % 20 + 1
+        page = i * 7 % 9999
+        body_parts.append(
+            f"典拠は[http://jodoshuzensho.jp/jozensearch_post/search/detail.php?"
+            f"lineno=J{vol:02d}_{page:04d} 浄全{vol}・{page}上]による。"
+        )
+
+    if i % 14 == 0:
+        vol = i % 85 + 1
+        page = i * 3 % 999
+        body_parts.append(
+            f"また[http://21dzk.l.u-tokyo.ac.jp/SAT2018/V{vol}.{page:04d}a.html "
+            f"正蔵{vol}・{page}上]も参照。"
+        )
+
     if i % 10 == 0:
         body_parts.append(
             '{|class="wikitable"\n'

@@ -94,6 +94,54 @@ def test_clean_wikitext_image():
     assert 'src="sample.jpg"' in html
     assert "キャプション" in html
 
+# --- 典拠リンク(docs/tenkyo-spec.md A-1) ---------------------------------
+# app/src/lib/wikitextConvert.test.ts の同名ケースと対応させること。
+# URLの形は本物だが、記事本文は一切使わず自作のダミー文で組み立てている。
+
+def test_clean_wikitext_marks_jozen_db_link_as_tenkyo():
+    html = wikitext.clean_wikitext(
+        "[http://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=J09_0508 浄全九・五〇八上]",
+        {},
+    )
+    assert 'class="external-link tenkyo-link"' in html
+    # 典拠DBはhttps配信のため引き上げる
+    assert 'href="https://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=J09_0508"' in html
+    # 表示テキストは原文のまま
+    assert ">浄全九・五〇八上</a>" in html
+
+
+def test_clean_wikitext_marks_sat_link_as_tenkyo():
+    html = wikitext.clean_wikitext(
+        "[http://21dzk.l.u-tokyo.ac.jp/SAT2018/V51.0861a.html 正蔵五一・八六一上]", {}
+    )
+    assert 'class="external-link tenkyo-link"' in html
+    assert 'href="https://21dzk.l.u-tokyo.ac.jp/SAT2018/V51.0861a.html"' in html
+
+
+def test_clean_wikitext_keeps_plain_external_link_unmarked():
+    html = wikitext.clean_wikitext("[http://example.com/foo 例]", {})
+    assert 'class="external-link"' in html
+    assert "tenkyo-link" not in html
+    # 未検証のホストはhttpのまま書き換えない
+    assert 'href="http://example.com/foo"' in html
+
+
+def test_clean_wikitext_marks_bare_tenkyo_link():
+    html = wikitext.clean_wikitext(
+        "[http://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=Z15_0203]", {}
+    )
+    assert 'class="external-link tenkyo-link"' in html
+    # ラベル省略時はhttps化した後のURLを表示に使う(hrefと表示を食い違わせない)
+    assert ">https://jodoshuzensho.jp/jozensearch_post/search/detail.php?lineno=Z15_0203</a>" in html
+
+
+def test_clean_wikitext_marks_raw_tenkyo_url():
+    html = wikitext.clean_wikitext(
+        "参照 https://21dzk.l.u-tokyo.ac.jp/SAT2018/V39.0586b.html", {}
+    )
+    assert 'class="external-link tenkyo-link"' in html
+
+
 def test_clean_wikitext_section_heading_and_hr():
     html = wikitext.clean_wikitext("=よみ／タイトル=\n== 概要 ==\n本文\n----", {})
     assert 'class="dict-section-heading"' in html

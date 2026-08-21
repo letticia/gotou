@@ -18,6 +18,39 @@ function quoteAttr(text: string): string {
   return `"${escapeHtml(text).replace(/"/g, "&quot;")}"`;
 }
 
+// --- 典拠リンク(docs/tenkyo-spec.md A-1) -----------------------------------
+// 大辞典のwikitextには、浄土宗全書テキストDB(浄全DB)とSAT大正蔵への外部リンクが
+// 既に埋め込まれている(A-0調査で浄全DB 2,486件・SAT 1,477件を確認)。これらを
+// 通常の外部リンクと区別できるよう、単純部分一致で判定して tenkyo-link クラスを
+// 付ける。判定条件・出力は factory/src/wikitext.py の同名処理と厳密に一致させること。
+const TENKYO_URL_MARKERS = ["jozensearch", "21dzk.l.u-tokyo.ac.jp"];
+
+function isTenkyoUrl(url: string): boolean {
+  const low = url.toLowerCase();
+  return TENKYO_URL_MARKERS.some((marker) => low.includes(marker));
+}
+
+/**
+ * 典拠DBは両サイトともhttpsで配信されているため http:// を https:// へ引き上げる。
+ * 大辞典側の記述は http:// のままだが、アプリ自体がhttpsで配信されるため、
+ * 典拠へ渡る導線だけでも安全な経路にしておく。判定済みの2ホストにのみ適用し、
+ * 未検証のホストは書き換えない。
+ */
+function normalizeTenkyoUrl(url: string): string {
+  if (isTenkyoUrl(url) && url.toLowerCase().startsWith("http://")) {
+    return `https://${url.slice("http://".length)}`;
+  }
+  return url;
+}
+
+/** 外部リンクの<a>を組み立てる。labelを省略するとURL自体を表示に使う。 */
+function externalLinkHtml(rawUrl: string, label?: string): string {
+  const url = normalizeTenkyoUrl(rawUrl.trim());
+  const text = label ?? url;
+  const cssClass = isTenkyoUrl(url) ? "external-link tenkyo-link" : "external-link";
+  return `<a class="${cssClass}" href=${quoteAttr(url)}>${escapeHtml(text)}</a>`;
+}
+
 /** XMLで未定義の制御文字や生の&記号を適切にエスケープ */
 export function sanitizeXmlString(text: string): string {
   if (!text) return "";
@@ -327,19 +360,17 @@ export function cleanWikitext(
   text = text.replace(
     /\[(https?:\/\/[^\s\]]+)\s+([^\]]+)\]/g,
     (_m, url: string, label: string) => {
-      url = url.trim();
       label = label.trim();
       label = label.replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, "$1");
       label = label.replace(/\[/g, "").replace(/\]/g, "");
-      return `<a class="external-link" href=${quoteAttr(url)}>${escapeHtml(label)}</a>`;
+      return externalLinkHtml(url, label);
     },
   );
 
   // 9. 外部リンク [http://...]
-  text = text.replace(/\[(https?:\/\/[^\s\]]+)\]/g, (_m, url: string) => {
-    url = url.trim();
-    return `<a class="external-link" href=${quoteAttr(url)}>${escapeHtml(url)}</a>`;
-  });
+  text = text.replace(/\[(https?:\/\/[^\s\]]+)\]/g, (_m, url: string) =>
+    externalLinkHtml(url),
+  );
 
   // 10. 内部リンク [[タイトル|表示テキスト]]
   text = text.replace(/\[\[(.*?)\]\]/g, (_m, content: string) => {
@@ -385,7 +416,7 @@ export function cleanWikitext(
     if (token.startsWith("<a")) return token;
     return token.replace(
       /https?:\/\/[^\s<>)\]"'`　-〿぀-ゟ゠-ヿ一-龯]+/g,
-      (url) => `<a class="external-link" href=${quoteAttr(url)}>${escapeHtml(url)}</a>`,
+      (url) => externalLinkHtml(url),
     );
   });
   text = newTokens.join("");

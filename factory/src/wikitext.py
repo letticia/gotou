@@ -9,6 +9,42 @@ import re
 import xml.sax.saxutils as saxutils
 
 
+# --- 典拠リンク(docs/tenkyo-spec.md A-1) ---------------------------------
+# 大辞典のwikitextには、浄土宗全書テキストDB(浄全DB)とSAT大正蔵への外部リンクが
+# 既に埋め込まれている(A-0調査で浄全DB 2,486件・SAT 1,477件を確認)。これらを
+# 通常の外部リンクと区別できるよう、typo安全な単純部分一致で判定して
+# tenkyo-link クラスを付ける。判定条件・出力は
+# app/src/lib/wikitextConvert.ts の同名処理と厳密に一致させること。
+TENKYO_URL_MARKERS = ("jozensearch", "21dzk.l.u-tokyo.ac.jp")
+
+
+def is_tenkyo_url(url):
+    """典拠DB(浄全DB・SAT)へのURLかどうか"""
+    low = url.lower()
+    return any(marker in low for marker in TENKYO_URL_MARKERS)
+
+
+def normalize_tenkyo_url(url):
+    """典拠DBは両サイトともhttpsで配信されているため http:// を https:// へ引き上げる。
+
+    大辞典側の記述は http:// のままだが、アプリ自体がhttpsで配信されるため、
+    典拠へ渡る導線だけでも安全な経路にしておく。判定済みの2ホストにのみ適用し、
+    未検証のホストは書き換えない。
+    """
+    if is_tenkyo_url(url) and url.lower().startswith("http://"):
+        return "https://" + url[len("http://"):]
+    return url
+
+
+def external_link_html(url, label=None):
+    """外部リンクの<a>を組み立てる。labelを省略するとURL自体を表示に使う。"""
+    url = normalize_tenkyo_url(url.strip())
+    if label is None:
+        label = url
+    css_class = "external-link tenkyo-link" if is_tenkyo_url(url) else "external-link"
+    return f'<a class="{css_class}" href={saxutils.quoteattr(url)}>{saxutils.escape(label)}</a>'
+
+
 def sanitize_xml_string(text):
     """XMLで未定義の制御文字や生の&記号を適切にエスケープ"""
     if not text:
@@ -284,18 +320,13 @@ def clean_wikitext(text, title_to_id_map, link_sink=None, broken_link_sink=None)
         label = m.group(2).strip()
         label = re.sub(r'\[\[(?:[^|\]]*\|)?([^\]]+)\]\]', r'\1', label)
         label = label.replace('[', '').replace(']', '')
-        url_esc = saxutils.quoteattr(url)
-        label_esc = saxutils.escape(label)
-        return f'<a class="external-link" href={url_esc}>{label_esc}</a>'
+        return external_link_html(url, label)
 
     text = re.sub(r'\[(https?://[^\s\]]+)\s+([^\]]+)\]', replace_ext_link_text, text)
 
     # 9. 外部リンク [http://...]
     def replace_ext_link_bare(m):
-        url = m.group(1).strip()
-        url_esc = saxutils.quoteattr(url)
-        label_esc = saxutils.escape(url)
-        return f'<a class="external-link" href={url_esc}>{label_esc}</a>'
+        return external_link_html(m.group(1))
 
     text = re.sub(r'\[(https?://[^\s\]]+)\]', replace_ext_link_bare, text)
 
@@ -343,10 +374,7 @@ def clean_wikitext(text, title_to_id_map, link_sink=None, broken_link_sink=None)
             new_tokens.append(token)
         else:
             def replace_raw_url(m):
-                url = m.group(0).strip()
-                url_esc = saxutils.quoteattr(url)
-                label_esc = saxutils.escape(url)
-                return f'<a class="external-link" href={url_esc}>{label_esc}</a>'
+                return external_link_html(m.group(0))
             token = re.sub(r'https?://[^\s<>\)\]"\'`　-〿぀-ゟ゠-ヿ一-龯]+', replace_raw_url, token)
             new_tokens.append(token)
     text = "".join(new_tokens)
