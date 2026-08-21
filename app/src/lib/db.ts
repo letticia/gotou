@@ -15,8 +15,16 @@ export interface EntryRow {
 
 export interface DictionaryDb {
   searchByPrefix(normalizedQuery: string): SearchRow[];
+  /** 本文に needle を含む項目を返す(逆引き典拠検索の第1層。docs/tenkyo-spec.md B-2) */
+  searchTextContains(needle: string, limit: number): SearchRow[];
   getEntry(id: number): EntryRow | null;
   close(): void;
+}
+
+/** LIKEのワイルドカード(% _)とエスケープ文字自身を無効化する。
+ * 利用者が貼り付けた一節にこれらが含まれていても素直に文字として扱うため。 */
+function escapeLikePattern(text: string): string {
+  return text.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 }
 
 /**
@@ -54,6 +62,30 @@ export async function openDatabaseFromBytes(bytes: Uint8Array): Promise<Dictiona
         rowMode: "object",
         callback: (row) => {
           rows.push({ id: row.id as number, title: row.title as string, reading: row.reading as string });
+        },
+      });
+      return rows;
+    },
+
+    searchTextContains(needle, limit) {
+      // FTS5のMATCHは使わない: 既定のunicode61トークナイザは句読点でしか区切らないため、
+      // 日本語では句の途中の部分一致が常に0件になる(docs/tenkyo-spec.md B-2の計測参照)。
+      // 本文は全体でも4.4M文字程度しかなく、LIKEの全走査でも10ms前後で収まる。
+      // entries_fts.rowid は entries.id と一致するので、JOINで表示可能な項目に戻せる。
+      if (!needle) return [];
+      const rows: SearchRow[] = [];
+      db.exec({
+        sql: `SELECT e.id, e.title, e.reading FROM entries_fts f
+              JOIN entries e ON e.id = f.rowid
+              WHERE f.body_text LIKE ? ESCAPE '\\' LIMIT ?`,
+        bind: [`%${escapeLikePattern(needle)}%`, limit],
+        rowMode: "object",
+        callback: (row) => {
+          rows.push({
+            id: row.id as number,
+            title: row.title as string,
+            reading: row.reading as string,
+          });
         },
       });
       return rows;
