@@ -3,6 +3,7 @@ import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
 import SettingsScreen from "./SettingsScreen";
 import AboutScreen from "./AboutScreen";
+import HelpScreen from "./HelpScreen";
 import { BookIcon, FlameIcon, GearIcon } from "./Icons";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
@@ -20,6 +21,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("search");
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
   // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
@@ -86,7 +88,9 @@ export default function App() {
         </div>
       )}
       {showSettings ? (
-        showAbout ? (
+        showHelp ? (
+          <HelpScreen onClose={() => setShowHelp(false)} />
+        ) : showAbout ? (
           <AboutScreen onClose={() => setShowAbout(false)} />
         ) : (
           <SettingsScreen
@@ -95,6 +99,7 @@ export default function App() {
             counterMode={counterMode}
             onCounterModeChange={handleCounterModeChange}
             onClose={() => setShowSettings(false)}
+            onOpenHelp={() => setShowHelp(true)}
             onOpenAbout={() => setShowAbout(true)}
           />
         )

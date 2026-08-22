@@ -9,6 +9,7 @@ interface SettingsScreenProps {
   counterMode: GongyoCounterMode;
   onCounterModeChange: (mode: GongyoCounterMode) => void;
   onClose: () => void;
+  onOpenHelp: () => void;
   onOpenAbout: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function SettingsScreen({
   counterMode,
   onCounterModeChange,
   onClose,
+  onOpenHelp,
   onOpenAbout,
 }: SettingsScreenProps) {
   return (
@@ -70,6 +72,10 @@ export default function SettingsScreen({
       </p>
 
       <section className="settings-group">
+        <button type="button" className="settings-row-button" onClick={onOpenHelp}>
+          <span className="settings-row-label">使い方</span>
+          <ChevronRightIcon />
+        </button>
         <button type="button" className="settings-row-button" onClick={onOpenAbout}>
           <span className="settings-row-label">このアプリについて</span>
           <ChevronRightIcon />

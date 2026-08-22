@@ -897,6 +897,11 @@ body {
   text-align: left;
 }
 
+/* 2行以上並ぶときの区切り線(.settings-row と同じ扱い) */
+.settings-row-button + .settings-row-button {
+  border-top: 1px solid var(--separator);
+}
+
 .settings-row-button svg {
   width: 18px;
   height: 18px;
@@ -926,6 +931,29 @@ body {
 
 .settings-body-text a {
   color: var(--accent);
+}
+
+.settings-body-text + .settings-body-text {
+  margin-top: 0.7em;
+}
+
+/* 使い方の箇条書き。settings-body-text と同じ体裁で、行頭を少し起こす */
+.settings-list {
+  margin: 0;
+  padding-left: 1.2em;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.settings-list li + li {
+  margin-top: 0.5em;
+}
+
+.settings-body-text + .settings-list,
+.settings-list + .settings-body-text {
+  margin-top: 0.7em;
 }
 
 .settings-footnote {
