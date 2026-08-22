@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openDatabaseFromBytes } from "./lib/db";
-import type { DictionaryDb } from "./lib/db";
+import type { DictionaryDb, SuggestionRow } from "./lib/db";
 import {
   hasCachedLiveDictionary,
   readCachedLiveDictionaryBytes,
@@ -41,6 +41,9 @@ import {
 /** 見出し語で引く(既定) / 一節から典拠をさがす(逆引き。docs/tenkyo-spec.md B) */
 type QueryMode = "headword" | "tenkyo";
 
+/** 検索前の画面で紹介する収録語の件数 */
+const SUGGESTION_COUNT = 5;
+
 // 勤行テキストはimport.meta.globのeager読み込みなので、モジュール初期化時に一度だけ作る
 const gongyoUnits = loadGongyoUnits();
 const gongyoPresets = loadGongyoPresets();
@@ -75,6 +78,9 @@ export default function SearchMode() {
   const [selectionText, setSelectionText] = useState<string | null>(null);
   // アプリ内に表示中の浄全DB検索(検索語。nullなら非表示)
   const [jozenPanelKeyword, setJozenPanelKeyword] = useState<string | null>(null);
+  // 検索前の画面で紹介する収録語。押すたびに引き直せるようカウンタで再取得する
+  const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
 
   // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
   // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
@@ -355,6 +361,15 @@ export default function SearchMode() {
     setJozenPanelKeyword(null);
   }, [query, queryMode]);
 
+  // 検索前の画面に出す収録語を引く。辞書が開けた時と「ほかの語を見る」の押下時だけ。
+  useEffect(() => {
+    if (!db) {
+      setSuggestions([]);
+      return;
+    }
+    setSuggestions(db.randomEntries(SUGGESTION_COUNT));
+  }, [db, suggestionSeed]);
+
   /** 選択した一節をそのまま逆引き検索へ渡し、一覧画面に戻る */
   function handleSearchSelection(event: React.PointerEvent<HTMLButtonElement>) {
     // pointerdownで処理する: clickを待つと、ボタンに触れた時点で選択が解除され
@@ -549,6 +564,35 @@ export default function SearchMode() {
           </ul>
           {db && query && results.length === 0 && (
             <p className="empty">該当する項目がありません</p>
+          )}
+          {/* 検索前の余白で語に出あえるようにする。押せばその項目へ、
+              入力を始めれば通常の検索結果に切り替わる */}
+          {db && !query && suggestions.length > 0 && (
+            <section className="preset-section suggestion-section">
+              <h3>収録語から</h3>
+              <ul className="suggestion-list">
+                {suggestions.map((entry) => (
+                  <li key={entry.id}>
+                    <button type="button" onClick={() => navigateTo(entry.id)}>
+                      <span className="suggestion-head">
+                        <span className="title">{entry.title}</span>
+                        <span className="reading">{entry.reading}</span>
+                      </span>
+                      {entry.excerpt && (
+                        <span className="suggestion-excerpt">{entry.excerpt}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="suggestion-reroll"
+                onClick={() => setSuggestionSeed((n) => n + 1)}
+              >
+                ほかの語を見る
+              </button>
+            </section>
           )}
         </>
       ) : (

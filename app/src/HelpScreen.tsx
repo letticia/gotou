@@ -33,6 +33,10 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <h3 className="settings-subhead">辞書を引く</h3>
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
+          <li>
+            何も入力していないときは「収録語から」に何語かを紹介します。タップすると
+            その項目が開きます。「ほかの語を見る」で引き直せます。
+          </li>
           <li>読み(ひらがな)または見出し語を入れると、前方一致で候補が絞られます。</li>
           <li>
             旧字体・異体字は自動で吸収します(「彌」で「弥」、「佛」で「仏」など)。

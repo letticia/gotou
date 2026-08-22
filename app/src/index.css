@@ -399,6 +399,77 @@ body {
   cursor: default;
 }
 
+/* 検索前の画面で収録語を紹介する一覧。
+   .result-list は「見出し語と読みを1行に両端揃え」の体裁なので、
+   本文の抜粋を添えるこちらは別のクラスにしている。 */
+.suggestion-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suggestion-list button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  width: 100%;
+  padding: var(--space-3) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--separator);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-list li:last-child button {
+  border-bottom: none;
+}
+
+.suggestion-list button:active {
+  opacity: 0.6;
+}
+
+.suggestion-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.suggestion-head .title {
+  font-family: var(--font-content);
+  font-weight: bold;
+}
+
+.suggestion-head .reading {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-content);
+  font-size: 0.85em;
+}
+
+.suggestion-excerpt {
+  color: var(--text-secondary);
+  font-family: var(--font-content);
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+
+.suggestion-reroll {
+  margin-top: var(--space-3);
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
 /* 浄全DBの検索結果をアプリ内に表示するパネル。
    中身は外部サイトのページそのものなので、枠と出典表記で「ここから先は外部」と
    分かるようにしている(こちらは本文を取得も保持もしない)。 */
