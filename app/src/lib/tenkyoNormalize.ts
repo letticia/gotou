@@ -33,6 +33,15 @@ export function extractClauses(input: string): string[] {
 }
 
 /**
+ * その文字列で逆引きが成立するか(=照合に使える句が1つでも取れるか)。
+ * 記事本文を範囲選択したときに「この一節の典拠をさがす」を出すかの判定に使う。
+ * 短すぎる選択や記号だけの選択では何も見つからないので、導線自体を出さない。
+ */
+export function canSearchAsTenkyo(text: string): boolean {
+  return extractClauses(text).length > 0;
+}
+
+/**
  * 浄全DBへ渡す検索語を組み立てる。句読点・括弧・空白を除去して20字に丸める。
  * 20字を超える入力は「前半 後半」の2語AND形式にする(スペース区切りでAND検索になり、
  * 長い一節をそのまま投げるより当たりやすい)。

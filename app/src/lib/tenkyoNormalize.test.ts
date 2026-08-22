@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildJozenKeyword, extractClauses } from "./tenkyoNormalize";
+import { buildJozenKeyword, canSearchAsTenkyo, extractClauses } from "./tenkyoNormalize";
 
 describe("extractClauses", () => {
   it("splits a passage at Japanese punctuation", () => {
@@ -48,6 +48,25 @@ describe("extractClauses", () => {
 
   it("keeps a passage without any punctuation as a single clause", () => {
     expect(extractClauses("南無阿弥陀仏")).toEqual(["南無阿弥陀仏"]);
+  });
+});
+
+describe("canSearchAsTenkyo", () => {
+  it("accepts a selection long enough to yield a clause", () => {
+    expect(canSearchAsTenkyo("南無阿弥陀仏")).toBe(true);
+  });
+
+  it("rejects a selection that is too short to search on", () => {
+    expect(canSearchAsTenkyo("念仏")).toBe(false);
+    expect(canSearchAsTenkyo("")).toBe(false);
+  });
+
+  it("rejects a selection made only of punctuation", () => {
+    expect(canSearchAsTenkyo("、。「」（）")).toBe(false);
+  });
+
+  it("accepts a long passage even when every clause is short except one", () => {
+    expect(canSearchAsTenkyo("また、念仏を信ぜん人は、この")).toBe(true);
   });
 });
 

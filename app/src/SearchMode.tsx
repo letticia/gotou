@@ -20,7 +20,7 @@ import {
   hasSeenExternalLinkNotice,
   markExternalLinkNoticeSeen,
 } from "./lib/externalLinks";
-import { buildJozenKeyword, extractClauses } from "./lib/tenkyoNormalize";
+import { buildJozenKeyword, canSearchAsTenkyo, extractClauses } from "./lib/tenkyoNormalize";
 import {
   formatPresetNames,
   searchDictionaryByClauses,
@@ -69,6 +69,8 @@ export default function SearchMode() {
   // 一時的な通知(オフライン時に外部リンクを踏んだ場合など)。数秒で自動的に消す
   const [toast, setToast] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("headword");
+  // 記事本文で選択された一節。「この一節の典拠をさがす」を出すかの判断に使う
+  const [selectionText, setSelectionText] = useState<string | null>(null);
 
   // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
   // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
@@ -293,10 +295,60 @@ export default function SearchMode() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  // 記事本文の範囲選択を拾って「この一節の典拠をさがす」を出す
+  // (docs/tenkyo-spec.md UI節・M4)。選択が本文の外に出ている場合や、
+  // 短すぎて句が取れない場合は導線を出さない。
+  useEffect(() => {
+    function handleSelectionChange() {
+      const selection = window.getSelection();
+      const container = bodyRef.current;
+      if (!selection || selection.isCollapsed || !container) {
+        setSelectionText(null);
+        return;
+      }
+      // 記事本文の中だけを対象にする(見出しやツールバーの選択では出さない)
+      if (
+        !selection.anchorNode ||
+        !selection.focusNode ||
+        !container.contains(selection.anchorNode) ||
+        !container.contains(selection.focusNode)
+      ) {
+        setSelectionText(null);
+        return;
+      }
+      const text = selection.toString().trim();
+      setSelectionText(canSearchAsTenkyo(text) ? text : null);
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+  }, []);
+
+  // 記事から離れたら選択の導線も消す(前の記事の選択が残らないように)
+  useEffect(() => {
+    setSelectionText(null);
+  }, [currentId]);
+
+  /** 選択した一節をそのまま逆引き検索へ渡し、一覧画面に戻る */
+  function handleSearchSelection(event: React.PointerEvent<HTMLButtonElement>) {
+    // pointerdownで処理する: clickを待つと、ボタンに触れた時点で選択が解除され
+    // selectionchangeがselectionTextを消してボタン自体が消えてしまう
+    event.preventDefault();
+    if (!selectionText) return;
+    setQuery(selectionText);
+    setQueryMode("tenkyo");
+    setSelectionText(null);
+    window.getSelection()?.removeAllRanges();
+    // 記事を閉じて一覧(=逆引きの結果画面)へ戻る。記事の履歴は辿り直さない
+    setHistory([]);
+    setCurrentId(null);
+  }
+
   // 記事画面・一覧画面のどちらからも外部サイトへ出られる(記事本文の典拠リンクと、
   // 逆引きの浄全DB検索ボタン)。どちらの画面でもトーストが出るよう共通化する。
+  // 選択の導線と同じ位置に出るので、両方見えるときはトーストを一段上げる
   const toastElement = toast ? (
-    <div className="toast" role="status">
+    <div className={selectionText ? "toast toast-raised" : "toast"} role="status">
       {toast}
     </div>
   ) : null;
@@ -381,6 +433,13 @@ export default function SearchMode() {
           />
           <p className="entry-source">出典: 浄土宗大辞典(非公式・本アプリ独自の変換による表示です)</p>
         </div>
+        {selectionText && (
+          <div className="selection-action">
+            <button type="button" onPointerDown={handleSearchSelection}>
+              この一節の典拠をさがす
+            </button>
+          </div>
+        )}
         {toastElement}
       </div>
     );
