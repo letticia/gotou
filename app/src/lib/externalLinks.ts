@@ -30,6 +30,17 @@ export function externalLinkConfirmMessage(href: string): string {
   return `${where}をブラウザの新しいタブで開きます。よろしいですか?`;
 }
 
+/**
+ * 外部サイトの内容をアプリ内(iframe)に表示する場合の確認文面。
+ * 新しいタブで開く場合と区別する: 見た目はアプリ内でも、読み込んでいるのは
+ * 外部サイトそのものであることを利用者に伝える必要がある。
+ */
+export function externalEmbedConfirmMessage(href: string): string {
+  const name = describeExternalSite(href);
+  const what = name ? `外部サイト『${name}』` : "外部サイト";
+  return `${what}の内容をアプリ内に表示します。読み込むのは外部サイトのページそのものです。よろしいですか?`;
+}
+
 /** 確認ダイアログを既に見せたか。localStorageが使えない場合は毎回見せる(安全側)。 */
 export function hasSeenExternalLinkNotice(): boolean {
   try {

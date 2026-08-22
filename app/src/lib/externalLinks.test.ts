@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   describeExternalSite,
+  externalEmbedConfirmMessage,
   externalLinkConfirmMessage,
   hasSeenExternalLinkNotice,
   markExternalLinkNoticeSeen,
@@ -44,6 +45,27 @@ describe("externalLinkConfirmMessage", () => {
     const msg = externalLinkConfirmMessage("https://example.com/foo");
     expect(msg).toContain("外部サイト");
     expect(msg).not.toContain("『");
+  });
+});
+
+describe("externalEmbedConfirmMessage", () => {
+  it("names the site and says the content is shown inside the app", () => {
+    const msg = externalEmbedConfirmMessage(
+      "https://jodoshuzensho.jp/jozensearch_post/search/connect_jozen_DB.php",
+    );
+    expect(msg).toContain("浄土宗全書テキストデータベース");
+    expect(msg).toContain("アプリ内");
+  });
+
+  it("makes clear that the external page itself is being loaded", () => {
+    const msg = externalEmbedConfirmMessage("https://example.com/foo");
+    expect(msg).toContain("外部サイト");
+    expect(msg).toContain("読み込む");
+  });
+
+  it("is worded differently from the new-tab message", () => {
+    const href = "https://jodoshuzensho.jp/jozensearch_post/search/connect_jozen_DB.php";
+    expect(externalEmbedConfirmMessage(href)).not.toBe(externalLinkConfirmMessage(href));
   });
 });
 

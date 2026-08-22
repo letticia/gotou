@@ -16,10 +16,12 @@ import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
 import {
+  externalEmbedConfirmMessage,
   externalLinkConfirmMessage,
   hasSeenExternalLinkNotice,
   markExternalLinkNoticeSeen,
 } from "./lib/externalLinks";
+import JozenPanel from "./JozenPanel";
 import { buildJozenKeyword, canSearchAsTenkyo, extractClauses } from "./lib/tenkyoNormalize";
 import {
   formatPresetNames,
@@ -71,6 +73,8 @@ export default function SearchMode() {
   const [queryMode, setQueryMode] = useState<QueryMode>("headword");
   // 記事本文で選択された一節。「この一節の典拠をさがす」を出すかの判断に使う
   const [selectionText, setSelectionText] = useState<string | null>(null);
+  // アプリ内に表示中の浄全DB検索(検索語。nullなら非表示)
+  const [jozenPanelKeyword, setJozenPanelKeyword] = useState<string | null>(null);
 
   // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
   // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
@@ -267,7 +271,11 @@ export default function SearchMode() {
    * 両方が必ずここを通る。POST送信はwindow.openを経由しないので、素通りさせないよう
    * 呼び出し側で明示的に通すこと(docs/tenkyo-spec.md B-3)。
    */
-  function guardExternalNavigation(href: string, proceed: () => void) {
+  function guardExternalNavigation(
+    href: string,
+    proceed: () => void,
+    confirmMessage: (href: string) => string = externalLinkConfirmMessage,
+  ) {
     // 典拠DBは外部サイトなのでオフラインでは開けない。踏んでから気付けるようにする
     // (存在確認のための事前リクエストはしない、という掟に沿う)。
     if (!navigator.onLine) {
@@ -276,14 +284,27 @@ export default function SearchMode() {
     }
 
     if (!hasSeenExternalLinkNotice()) {
-      if (!window.confirm(externalLinkConfirmMessage(href))) return;
+      if (!window.confirm(confirmMessage(href))) return;
       markExternalLinkNoticeSeen();
     }
 
     proceed();
   }
 
-  function handleJozenSearch() {
+  /** 浄全DBの検索結果をアプリ内(iframe)に表示する */
+  function handleJozenSearchInApp() {
+    const keyword = buildJozenKeyword(query);
+    if (!keyword) return;
+    // アプリ内表示でも読み込むのは外部サイトそのものなので、同じ関門を通す
+    guardExternalNavigation(
+      JOZEN_SEARCH_ACTION,
+      () => setJozenPanelKeyword(keyword),
+      externalEmbedConfirmMessage,
+    );
+  }
+
+  /** 浄全DBの検索結果を新しいタブで開く */
+  function handleJozenSearchInNewTab() {
     const keyword = buildJozenKeyword(query);
     if (!keyword) return;
     guardExternalNavigation(JOZEN_SEARCH_ACTION, () => submitJozenSearch(keyword));
@@ -328,6 +349,11 @@ export default function SearchMode() {
   useEffect(() => {
     setSelectionText(null);
   }, [currentId]);
+
+  // 検索語や検索の種類が変わったら、前の検索語の結果が残らないよう閉じる
+  useEffect(() => {
+    setJozenPanelKeyword(null);
+  }, [query, queryMode]);
 
   /** 選択した一節をそのまま逆引き検索へ渡し、一覧画面に戻る */
   function handleSearchSelection(event: React.PointerEvent<HTMLButtonElement>) {
@@ -571,16 +597,23 @@ export default function SearchMode() {
             <h3>浄土宗全書テキストデータベース(外部)</h3>
             <p className="tenkyo-jozen-note">
               手元の辞書と勤行テキストに無い場合は、浄土宗全書の全文を検索できます。
-              外部サイトが新しいタブで開きます。
+              結果は外部サイトから直接読み込んで表示します。
             </p>
             <button
               type="button"
               className="tenkyo-jozen-button"
               disabled={!buildJozenKeyword(query)}
-              onClick={handleJozenSearch}
+              onClick={handleJozenSearchInApp}
             >
               浄土宗全書で検索
             </button>
+            {jozenPanelKeyword && (
+              <JozenPanel
+                keyword={jozenPanelKeyword}
+                onClose={() => setJozenPanelKeyword(null)}
+                onOpenInNewTab={handleJozenSearchInNewTab}
+              />
+            )}
           </section>
         </>
       )}

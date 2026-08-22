@@ -31,4 +31,13 @@ describe("buildJozenFormSpec", () => {
   it("returns null for an empty keyword so nothing is submitted", () => {
     expect(buildJozenFormSpec("")).toBeNull();
   });
+
+  it("can target a named iframe so the result shows inside the app", () => {
+    const spec = buildJozenFormSpec("十念", "jozen-frame");
+    expect(spec!.target).toBe("jozen-frame");
+    // 送信先が変わってもPOST・action・フィールドは同じ契約のまま
+    expect(spec!.method).toBe("POST");
+    expect(spec!.action).toBe(JOZEN_SEARCH_ACTION);
+    expect(spec!.fields).toEqual([{ name: JOZEN_SEARCH_FIELD, value: "十念" }]);
+  });
 });
