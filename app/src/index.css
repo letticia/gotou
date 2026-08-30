@@ -229,13 +229,22 @@ body {
 }
 
 .result-list .title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: bold;
 }
 
+/* 読みが長い項目で見出し語が潰れないようにする(.suggestion-headと同じ理由)。
+   こちらは読みが検索の手がかりなので、収録語リストより広めに取る。 */
 .result-list .reading {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-secondary);
   font-size: 0.85em;
-  flex-shrink: 0;
 }
 
 .empty {
@@ -438,13 +447,23 @@ body {
   gap: var(--space-3);
 }
 
+/* 読みが長いと、縮まない読みに押されて見出し語が1文字ずつ折り返され、
+   行が縦に伸びてしまう(Issue #7)。見出し語に幅を優先して与え、
+   補助情報である読みの側を縮めて末尾を省略する。 */
 .suggestion-head .title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--font-content);
   font-weight: bold;
 }
 
 .suggestion-head .reading {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-secondary);
   font-family: var(--font-content);
   font-size: 0.85em;

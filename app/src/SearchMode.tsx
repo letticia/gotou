@@ -44,6 +44,10 @@ type QueryMode = "headword" | "tenkyo";
 /** 検索前の画面で紹介する収録語の件数 */
 const SUGGESTION_COUNT = 5;
 
+/** 範囲選択が落ち着いたと見なすまでの待ち時間(ミリ秒)。
+ *  選択ハンドルを動かしている間の再レンダリングを抑えるためのもの */
+const SELECTION_SETTLE_MS = 250;
+
 // 勤行テキストはimport.meta.globのeager読み込みなので、モジュール初期化時に一度だけ作る
 const gongyoUnits = loadGongyoUnits();
 const gongyoPresets = loadGongyoPresets();
@@ -67,6 +71,8 @@ export default function SearchMode() {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // selectionchangeの間引き用。ドラッグ中に何度も再レンダリングしないため
+  const selectionTimerRef = useRef<number | null>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
@@ -224,7 +230,21 @@ export default function SearchMode() {
     return searchGongyoByClauses(query, clauses, gongyoUnits, gongyoPresets);
   }, [query, clauses]);
 
-  const current = db && currentId !== null ? db.getEntry(currentId) : null;
+  // 記事はレンダリングのたびに引き直さない(SQLiteへの問い合わせを毎回走らせない)。
+  const current = useMemo(
+    () => (db && currentId !== null ? db.getEntry(currentId) : null),
+    [db, currentId],
+  );
+
+  // React 19はdangerouslySetInnerHTMLをオブジェクトの同一性で比較するため、
+  // {__html: ...}をJSXの中で毎回作ると、再レンダリングのたびにinnerHTMLが
+  // 無条件で書き直され、本文のDOMが丸ごと作り替えられる。
+  // 選択中にこれが起きると選択が解除され、範囲選択ができなくなる(Issue #8)。
+  // 同じ理由で、描画後に付けたリンク切れの印も消えていた。
+  const bodyHtmlProp = useMemo(
+    () => ({ __html: current?.bodyHtml ?? "" }),
+    [current?.bodyHtml],
+  );
 
   function navigateTo(id: number) {
     if (id === currentId) return;
@@ -325,8 +345,13 @@ export default function SearchMode() {
   // 記事本文の範囲選択を拾って「この一節の典拠をさがす」を出す
   // (docs/tenkyo-spec.md UI節・M4)。選択が本文の外に出ている場合や、
   // 短すぎて句が取れない場合は導線を出さない。
+  //
+  // selectionchangeは選択ハンドルを動かしている間ずっと発火する。そのたびに
+  // 状態を更新すると、指を動かしている最中に導線が出たり消えたりして操作の
+  // 邪魔になるので、選択が落ち着いてから反映する(Issue #8)。
   useEffect(() => {
-    function handleSelectionChange() {
+    function applySelection() {
+      selectionTimerRef.current = null;
       const selection = window.getSelection();
       const container = bodyRef.current;
       if (!selection || selection.isCollapsed || !container) {
@@ -347,8 +372,21 @@ export default function SearchMode() {
       setSelectionText(canSearchAsTenkyo(text) ? text : null);
     }
 
+    function handleSelectionChange() {
+      if (selectionTimerRef.current !== null) {
+        window.clearTimeout(selectionTimerRef.current);
+      }
+      selectionTimerRef.current = window.setTimeout(applySelection, SELECTION_SETTLE_MS);
+    }
+
     document.addEventListener("selectionchange", handleSelectionChange);
-    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+      if (selectionTimerRef.current !== null) {
+        window.clearTimeout(selectionTimerRef.current);
+        selectionTimerRef.current = null;
+      }
+    };
   }, []);
 
   // 記事から離れたら選択の導線も消す(前の記事の選択が残らないように)
@@ -470,7 +508,7 @@ export default function SearchMode() {
             ref={bodyRef}
             className="body-html"
             onClick={handleBodyClick}
-            dangerouslySetInnerHTML={{ __html: current.bodyHtml }}
+            dangerouslySetInnerHTML={bodyHtmlProp}
           />
           <p className="entry-source">出典: 浄土宗大辞典(非公式・本アプリ独自の変換による表示です)</p>
         </div>
