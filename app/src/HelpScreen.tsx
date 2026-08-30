@@ -2,6 +2,11 @@ import { ChevronLeftIcon } from "./Icons";
 
 // アプリ内のマニュアル。内容はリポジトリのREADME.mdの「使い方」と対応させてある。
 // 片方を直したらもう片方も直すこと(マークダウンを描画する仕組みは持たせていない)。
+//
+// 長い文が文字列の連結になっているのは、JSXが要素内の改行を半角スペースに
+// 変換してしまうため。日本語の文中に空白が入り、折り返し位置によっては
+// 「薄く、 いま読んでいる」のように字間が空いて見える。ソースの見た目のために
+// 改行するときは、必ず連結の形にすること。
 
 interface HelpScreenProps {
   onClose: () => void;
@@ -21,9 +26,9 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <h3 className="settings-subhead">はじめに</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">
-          辞書データを使うには、ホーム画面への追加(インストール)が必要です。
-          追加したアプリを開いて「ダウンロード開始」を押すと、辞書の取得が始まります
-          (約9,200項目。回線によっては数分かかります)。
+          {"辞書データを使うには、ホーム画面への追加(インストール)が必要です。"
+            + "追加したアプリを開いて「ダウンロード開始」を押すと、辞書の取得が始まります"
+            + "(約9,200項目。回線によっては数分かかります)。"}
         </p>
         <p className="settings-body-text">
           一度取得すれば、以後はオフラインで使えます。
@@ -34,8 +39,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
           <li>
-            何も入力していないときは「収録語から」に何語かを紹介します。タップすると
-            その項目が開きます。「ほかの語を見る」で引き直せます。
+            {"何も入力していないときは「収録語から」に何語かを紹介します。タップすると"
+              + "その項目が開きます。「ほかの語を見る」で引き直せます。"}
           </li>
           <li>読み(ひらがな)または見出し語を入れると、前方一致で候補が絞られます。</li>
           <li>
@@ -43,12 +48,12 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
           </li>
           <li>「A-」「A+」で文字の大きさを変えられます。</li>
           <li>
-            本文中の橙色のリンクは他の項目へのリンクです。タップで移動し、
-            「戻る」で元の項目に帰れます。
+            {"本文中の橙色のリンクは他の項目へのリンクです。タップで移動し、"
+              + "「戻る」で元の項目に帰れます。"}
           </li>
           <li>
-            末尾に「↗」が付いたリンクは典拠リンクです。浄土宗全書テキストデータベースや
-            SAT大正蔵の該当ページを新しいタブで開きます。
+            {"末尾に「↗」が付いたリンクは典拠リンクです。浄土宗全書テキストデータベースや"
+              + "SAT大正蔵の該当ページを新しいタブで開きます。"}
           </li>
         </ul>
       </section>
@@ -56,8 +61,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <h3 className="settings-subhead">一節から典拠をさがす</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">
-          「この一節、出典はどこだったか」を調べる機能です。入力欄の下のトグルで
-          「一節から典拠をさがす」に切り替え、調べたい一節を貼り付けてください。
+          {"「この一節、出典はどこだったか」を調べる機能です。入力欄の下のトグルで"
+            + "「一節から典拠をさがす」に切り替え、調べたい一節を貼り付けてください。"}
         </p>
         <p className="settings-body-text">結果は3つのグループで出ます。</p>
         <ul className="settings-list">
@@ -68,13 +73,13 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
             <b>勤行テキスト</b> … 収録されている偈文と、それを含む差定の名前。
           </li>
           <li>
-            <b>浄土宗全書テキストデータベース</b> … 手元に無い場合の全文検索。
-            結果は外部サイトから直接読み込んで表示します。
+            <b>浄土宗全書テキストデータベース</b>
+            {" … 手元に無い場合の全文検索。結果は外部サイトから直接読み込んで表示します。"}
           </li>
         </ul>
         <p className="settings-body-text">
-          辞書の本文を読んでいるときに一節を範囲選択すると、画面下に
-          「この一節の典拠をさがす」が出ます。そのまま渡せます。
+          {"辞書の本文を読んでいるときに一節を範囲選択すると、画面下に"
+            + "「この一節の典拠をさがす」が出ます。そのまま渡せます。"}
         </p>
       </section>
 
@@ -92,8 +97,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
             ヘッダーの「横書き / 縦書き」で表示を切り替えられます(既定は縦書きの経本表示)。
           </li>
           <li>
-            十念・三唱礼は、既定では名前を1回示すだけで次に進みます。回数を数えたい場合は
-            設定で切り替えてください。
+            {"十念・三唱礼は、既定では名前を1回示すだけで次に進みます。回数を数えたい場合は"
+              + "設定で切り替えてください。"}
           </li>
         </ul>
       </section>
@@ -102,16 +107,16 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
           <li>
-            ヘッダー右の「≡ 2 / 18」が、式次第の何番目かを示します。画面のいちばん上の
-            細い帯は全体の進み具合です。
+            {"ヘッダー右の「≡ 2 / 18」が、式次第の何番目かを示します。画面のいちばん上の"
+              + "細い帯は全体の進み具合です。"}
           </li>
           <li>
-            この「≡ 2 / 18」を押すと式次第の一覧が開きます。読み終えた偈文は薄く、
-            いま読んでいる偈文には「いまここ」が付きます。
+            {"この「≡ 2 / 18」を押すと式次第の一覧が開きます。読み終えた偈文は薄く、"
+              + "いま読んでいる偈文には「いまここ」が付きます。"}
           </li>
           <li>
-            一覧の偈文を選ぶとその先頭へ飛べます。十念のように何度も出てくる偈文も、
-            左の番号で見分けられます。
+            {"一覧の偈文を選ぶとその先頭へ飛べます。十念のように何度も出てくる偈文も、"
+              + "左の番号で見分けられます。"}
           </li>
         </ul>
       </section>
@@ -119,8 +124,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <h3 className="settings-subhead">中断してしまったとき</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">
-          おつとめの途中でアプリが閉じてしまっても、位置は覚えています。もう一度開くと、
-          差定名の出る扉の画面に「続きから ─ ◯◯」が出ます。
+          {"おつとめの途中でアプリが閉じてしまっても、位置は覚えています。もう一度開くと、"
+            + "差定名の出る扉の画面に「続きから ─ ◯◯」が出ます。"}
         </p>
         <ul className="settings-list">
           <li>
@@ -141,8 +146,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
             自分の差定(「マイ差定」)は、偈文の並べ替え・オンオフ・回数の指定ができます。
           </li>
           <li>
-            「共有」からQRコードやURLで受け渡しできます。受け取った側は開くだけで
-            取り込みの確認が出ます。
+            {"「共有」からQRコードやURLで受け渡しできます。受け取った側は開くだけで"
+              + "取り込みの確認が出ます。"}
           </li>
         </ul>
       </section>
@@ -150,8 +155,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <h3 className="settings-subhead">オフラインでの利用</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">
-          辞書と勤行はオフラインで使えます。ただし典拠リンクと浄土宗全書の検索は
-          外部サイトを開くため、通信できる状態が必要です。
+          {"辞書と勤行はオフラインで使えます。ただし典拠リンクと浄土宗全書の検索は"
+            + "外部サイトを開くため、通信できる状態が必要です。"}
         </p>
       </section>
     </div>
