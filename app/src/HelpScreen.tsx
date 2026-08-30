@@ -98,6 +98,39 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
         </ul>
       </section>
 
+      <h3 className="settings-subhead">いまどこを読んでいるか</h3>
+      <section className="settings-group settings-textblock">
+        <ul className="settings-list">
+          <li>
+            ヘッダー右の「≡ 2 / 18」が、式次第の何番目かを示します。画面のいちばん上の
+            細い帯は全体の進み具合です。
+          </li>
+          <li>
+            この「≡ 2 / 18」を押すと式次第の一覧が開きます。読み終えた偈文は薄く、
+            いま読んでいる偈文には「いまここ」が付きます。
+          </li>
+          <li>
+            一覧の偈文を選ぶとその先頭へ飛べます。十念のように何度も出てくる偈文も、
+            左の番号で見分けられます。
+          </li>
+        </ul>
+      </section>
+
+      <h3 className="settings-subhead">中断してしまったとき</h3>
+      <section className="settings-group settings-textblock">
+        <p className="settings-body-text">
+          おつとめの途中でアプリが閉じてしまっても、位置は覚えています。もう一度開くと、
+          差定名の出る扉の画面に「続きから ─ ◯◯」が出ます。
+        </p>
+        <ul className="settings-list">
+          <li>
+            押すと中断したところから続けられます(数えかけの十念の残り回数も戻ります)。
+          </li>
+          <li>押さずに画面をタップすれば、いつもどおりはじめからです。</li>
+          <li>半日たった中断位置や、読み終えたおつとめについては出ません。</li>
+        </ul>
+      </section>
+
       <h3 className="settings-subhead">差定を自分用に整える</h3>
       <section className="settings-group settings-textblock">
         <ul className="settings-list">

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOutline,
   buildPages,
   firstPageIndexOfItem,
   lineSizeTier,
   paginatedBatchSize,
   paginatedSizeTier,
   resolveDisplayRuby,
+  resolveProgressPageIndex,
   pairShortBodyItems,
   splitAtPunctuation,
   splitLongBodyItems,
@@ -639,5 +641,101 @@ describe("verticalColumnCount", () => {
 
   it("never returns 0, so it is safe as a divisor in CSS", () => {
     expect(verticalColumnCount([])).toBe(1);
+  });
+});
+
+describe("buildOutline", () => {
+  // 十念が2回現れる差定。日常勤行式では4回現れるため、名前だけでは行を区別できない
+  const preset: GongyoPreset = {
+    version: 1,
+    id: "p",
+    name: "テスト差定",
+    items: [
+      { unit: "unit-a" },
+      { unit: "unit-long" },
+      { unit: "unit-b", counter: 10 },
+      { unit: "unit-a" },
+    ],
+  };
+
+  it("lists one row per preset item, in order, with 1-origin ordinals", () => {
+    const outline = buildOutline(buildPages(preset, units));
+    expect(outline.map((o) => [o.ordinal, o.unitTitle, o.itemIndex])).toEqual([
+      [1, "ユニットA", 0],
+      [2, "ロングユニット", 1],
+      [3, "ユニットB", 2],
+      [4, "ユニットA", 3],
+    ]);
+  });
+
+  it("gives repeated occurrences of one unit distinct rows", () => {
+    const outline = buildOutline(buildPages(preset, units));
+    const a = outline.filter((o) => o.unitTitle === "ユニットA");
+    expect(a.map((o) => o.itemIndex)).toEqual([0, 3]);
+    expect(a.map((o) => o.firstPageIndex)).toEqual([0, 4]);
+  });
+
+  it("folds a multi-page item into a single row and counts its pages", () => {
+    // unit-longは5句・1句12文字なのでbatchSize=4 → 2ページ
+    const outline = buildOutline(buildPages(preset, units));
+    expect(outline[1]).toMatchObject({ unitTitle: "ロングユニット", pageCount: 2 });
+    expect(outline[0].pageCount).toBe(1);
+  });
+
+  it("carries the counter total so the row can show ×10", () => {
+    const outline = buildOutline(buildPages(preset, units, "horizontal", "count"));
+    expect(outline[2]).toMatchObject({ unitTitle: "ユニットB", counterTotal: 10 });
+  });
+
+  it("omits items that are switched off (they are not displayed either)", () => {
+    const withDisabled: GongyoPreset = {
+      ...preset,
+      items: [{ unit: "unit-a" }, { unit: "unit-b", enabled: false }, { unit: "unit-a" }],
+    };
+    const outline = buildOutline(buildPages(withDisabled, units));
+    expect(outline.map((o) => o.itemIndex)).toEqual([0, 2]);
+    expect(outline.map((o) => o.ordinal)).toEqual([1, 2]);
+  });
+
+  it("returns an empty outline for an empty preset", () => {
+    expect(buildOutline([])).toEqual([]);
+  });
+});
+
+describe("resolveProgressPageIndex", () => {
+  const pages: GongyoPage[] = [
+    { unitId: "a", itemIndex: 0, unitTitle: "A", lines: [{ text: "1" }] },
+    { unitId: "b", itemIndex: 1, unitTitle: "B", lines: [{ text: "2" }] },
+    { unitId: "b", itemIndex: 1, unitTitle: "B", lines: [{ text: "3" }] },
+    { unitId: "b", itemIndex: 1, unitTitle: "B", lines: [{ text: "4" }] },
+    { unitId: "c", itemIndex: 2, unitTitle: "C", lines: [{ text: "5" }] },
+  ];
+
+  it("resolves a position inside a multi-page item", () => {
+    expect(resolveProgressPageIndex(pages, 1, 0)).toBe(1);
+    expect(resolveProgressPageIndex(pages, 1, 2)).toBe(3);
+  });
+
+  it("clamps to the last page of the item when it now has fewer pages", () => {
+    // 縦横の切り替えでページ数が減った場合(3ページ→2ページ等)を想定
+    const shorter: GongyoPage[] = [
+      { unitId: "a", itemIndex: 0, unitTitle: "A", lines: [{ text: "1" }] },
+      { unitId: "b", itemIndex: 1, unitTitle: "B", lines: [{ text: "2" }] },
+      { unitId: "c", itemIndex: 2, unitTitle: "C", lines: [{ text: "3" }] },
+    ];
+    expect(resolveProgressPageIndex(shorter, 1, 5)).toBe(1);
+  });
+
+  it("falls back to the beginning when the item is gone (switched off)", () => {
+    expect(resolveProgressPageIndex(pages, 99, 0)).toBe(0);
+  });
+
+  it("falls back to the beginning for an empty preset", () => {
+    expect(resolveProgressPageIndex([], 1, 1)).toBe(0);
+  });
+
+  it("ignores a negative or fractional offset", () => {
+    expect(resolveProgressPageIndex(pages, 1, -3)).toBe(1);
+    expect(resolveProgressPageIndex(pages, 1, 1.9)).toBe(2);
   });
 });

@@ -1,15 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  buildOutline,
   buildPages,
   firstPageIndexOfItem,
   loadGongyoPresets,
   loadGongyoUnits,
   resolveDisplayRuby,
+  resolveProgressPageIndex,
   sizeTierFor,
   verticalColumnCount,
   verticalMaxLineLength,
 } from "./lib/gongyo";
 import type { GongyoPage, GongyoPageLine, GongyoPreset } from "./lib/gongyo";
+import {
+  clearProgress,
+  isResumable,
+  loadProgress,
+  saveProgress,
+} from "./lib/gongyoProgress";
 import { loadCounterMode } from "./lib/gongyoCounterMode";
 import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
@@ -23,8 +31,10 @@ import {
   saveLastPresetId,
   saveUserPreset,
 } from "./lib/userPresets";
+import GongyoOutline from "./GongyoOutline";
 import PresetEditor from "./PresetEditor";
 import PresetPicker from "./PresetPicker";
+import { ListIcon } from "./Icons";
 
 // 選択UIが無い頃からの既定値。ユーザーが一度も選んだことが無ければこれを使う。
 const DEFAULT_PRESET_ID = "nichijo-gongyo-sanbujo";
@@ -81,6 +91,10 @@ export default function GongyoMode({
   const [presetId, setPresetId] = useState<string>(() => loadLastPresetId() ?? DEFAULT_PRESET_ID);
   const [view, setView] = useState<View>({ name: "reciting" });
   const [introShown, setIntroShown] = useState(false);
+  // 式次第の一覧。viewには載せない(理由はGongyoOutline.tsx冒頭)
+  const [showOutline, setShowOutline] = useState(false);
+  // 前回の中断位置。扉の「続きから」を出すかどうかの判断に使う
+  const [savedProgress, setSavedProgress] = useState(() => loadProgress());
   const [orientation, setOrientation] = useState(() => loadOrientation());
   // 十念・三唱礼の数え方(簡易表示/カウントダウン)。切り替えは設定画面でのみ行う
   // (Appは設定画面表示中GongyoModeをアンマウントするため、再マウント時にここで
@@ -120,6 +134,8 @@ export default function GongyoMode({
     [preset, unitsById, orientation, counterMode],
   );
 
+  const outline = useMemo(() => buildOutline(pages), [pages]);
+
   const [nav, setNav] = useState<GongyoNavState>(() => initState(pages));
   // 縦横の切り替え時に、戻り先として覚えておく差定内の位置(向き変更でページ番号が変わるため)
   const restoreItemIndexRef = useRef<number | null>(null);
@@ -139,10 +155,37 @@ export default function GongyoMode({
 
   useWakeLock(view.name === "reciting" && pages.length > 0);
 
+  // 読誦中の位置を保存し続ける。アプリが不意に終了しても読み手が戻れるようにする。
+  // 扉に居る間は保存しない(まだ読み始めていないのに前回の中断位置を潰さないため)。
+  useEffect(() => {
+    if (!introShown || !preset || pages.length === 0) return;
+    const pageIndex = Math.min(nav.pageIndex, pages.length - 1);
+    const page = pages[pageIndex];
+    if (!page) return;
+    saveProgress({
+      presetId: preset.id,
+      itemIndex: page.itemIndex,
+      // 向きの切り替えでページ分割が変わるため、絶対ページ番号ではなく
+      // その項目の何ページ目かで持つ
+      pageOffset: pageIndex - firstPageIndexOfItem(pages, page.itemIndex),
+      counterRemaining: nav.counterRemaining,
+      savedAt: Date.now(),
+    });
+  }, [introShown, preset, pages, nav]);
+
+  /** 中断位置を捨てる(明示的に読み始め直したとき・読み終えたとき) */
+  function forgetProgress() {
+    clearProgress();
+    setSavedProgress(null);
+  }
+
   function handleStart(id: string) {
     setPresetId(id);
     saveLastPresetId(id);
     setIntroShown(false);
+    setShowOutline(false);
+    // 差定を選び直すのは「はじめから始める」という意思表示なので、中断位置は捨てる
+    forgetProgress();
     setView({ name: "reciting" });
   }
 
@@ -282,6 +325,36 @@ export default function GongyoMode({
     saveOrientation(next);
   }
 
+  /** 中断位置から読み始める。扉は全面が「始める」タップ領域なので伝播を止める */
+  function handleResume(event: React.MouseEvent) {
+    event.stopPropagation();
+    if (!savedProgress) return;
+    const index = resolveProgressPageIndex(
+      pages,
+      savedProgress.itemIndex,
+      savedProgress.pageOffset,
+    );
+    const base = initState(pages, index);
+    setNav({
+      ...base,
+      // カウントダウンの途中で中断していたなら、その残り回数から続ける
+      // (設定を簡易表示に変えた等でカウンターが無くなっている場合はbaseに従う)
+      counterRemaining:
+        base.counterRemaining !== null && savedProgress.counterRemaining !== null
+          ? Math.min(savedProgress.counterRemaining, base.counterRemaining)
+          : base.counterRemaining,
+    });
+    setIntroShown(true);
+  }
+
+  // 「続きから」は、同じ差定の・半日以内の・先頭ではない中断位置があるときだけ出す
+  const canResume = isResumable(savedProgress, presetId, Date.now());
+  const resumeTitle = canResume
+    ? pages[
+        resolveProgressPageIndex(pages, savedProgress!.itemIndex, savedProgress!.pageOffset)
+      ]?.unitTitle
+    : undefined;
+
   if (!introShown) {
     // 扉(導入画面)は差定名だけを表示する経本の表紙のようなもののため、
     // 縦/横トグルの対象にせず常に縦書き・中央表示にする(#6)。
@@ -312,6 +385,14 @@ export default function GongyoMode({
             </div>
           </div>
         </div>
+        {canResume && resumeTitle && (
+          <div className="gongyo-resume">
+            <button type="button" onClick={handleResume}>
+              続きから ─ {resumeTitle}
+            </button>
+            <p className="gongyo-resume-note">画面をタップすると、はじめから読みます</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -348,10 +429,23 @@ export default function GongyoMode({
     // 最終ページまで読み終えた後のタップはこれ以上進めず行き止まりになるため、
     // 差定選択へ導く(選択画面はタブバーが出るので辞書へも移動しやすい)
     if (isFinished) {
+      // 読み終えた位置を「続きから」として勧めても意味がないので捨てる
+      forgetProgress();
       setView({ name: "picker" });
       return;
     }
     setNav((prev) => advance(prev, pages));
+  }
+
+  function handleOpenOutline(event: React.MouseEvent) {
+    event.stopPropagation();
+    setShowOutline(true);
+  }
+
+  /** 式次第一覧から任意の偈文へ飛ぶ。その項目の先頭ページに着ける */
+  function handleJump(itemIndex: number) {
+    setNav(initState(pages, firstPageIndexOfItem(pages, itemIndex)));
+    setShowOutline(false);
   }
 
   function handleBack(event: React.MouseEvent) {
@@ -385,8 +479,20 @@ export default function GongyoMode({
   const echoLine = hasEcho ? page.lines[0] : undefined;
   const bodyLines = hasEcho ? page.lines.slice(1) : page.lines;
 
+  const currentOrdinal =
+    outline.find((item) => item.itemIndex === page.itemIndex)?.ordinal ?? 1;
+  // 全体の進み具合。数字を増やさずに残りの見当がつくようにするための細い帯
+  const progressRatio = pages.length > 0 ? (nav.pageIndex + 1) / pages.length : 0;
+
   return (
     <div className={rootClassName} onClick={handleTap}>
+      <div
+        className="gongyo-progress"
+        style={{ "--gongyo-progress": progressRatio } as React.CSSProperties}
+        aria-hidden="true"
+      >
+        <div className="gongyo-progress-fill" />
+      </div>
       <div className="gongyo-header">
         {nav.pageIndex > 0 && (
           <button type="button" className="gongyo-back" onClick={handleBack}>
@@ -404,9 +510,17 @@ export default function GongyoMode({
         <button type="button" className="gongyo-preset-select" onClick={handleOpenPicker}>
           差定を選ぶ
         </button>
-        <span className="gongyo-position">
-          {nav.pageIndex + 1} / {pages.length}
-        </span>
+        {/* 通しのページ番号ではなく式次第の何番目かを示す。ここを押すと一覧が開く
+            (ヘッダーにボタンを増やさず、「いまどこ?」と目をやる場所をそのまま入口にする) */}
+        <button
+          type="button"
+          className="gongyo-position"
+          onClick={handleOpenOutline}
+          aria-label="式次第を開く"
+        >
+          <ListIcon className="gongyo-position-icon" />
+          {currentOrdinal} / {outline.length}
+        </button>
       </div>
       <div className="gongyo-labels">
         <span className="gongyo-preset-name">{preset.name}</span>
@@ -438,6 +552,15 @@ export default function GongyoMode({
         )}
         {isFinished && <p className="gongyo-finished">おつとめ、終わりです</p>}
       </div>
+      {showOutline && (
+        <GongyoOutline
+          presetName={preset.name}
+          outline={outline}
+          currentItemIndex={page.itemIndex}
+          onJump={handleJump}
+          onClose={() => setShowOutline(false)}
+        />
+      )}
     </div>
   );
 }

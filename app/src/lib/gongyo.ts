@@ -374,6 +374,65 @@ export function splitAtPunctuation(text: string, maxLen: number): string[] {
   return chunks;
 }
 
+/** 式次第の一覧(現在地の確認とジャンプ)に出す1項目 */
+export interface GongyoOutlineItem {
+  itemIndex: number;
+  unitTitle: string;
+  /** 一覧での序数(1始まり)。十念のように同じunitが差定に何度も現れるため、
+   * 名前だけでは行を区別できない */
+  ordinal: number;
+  firstPageIndex: number;
+  pageCount: number;
+  counterTotal?: number;
+}
+
+/**
+ * pagesから式次第の一覧を組み立てる。presetのitemsではなくpagesを元にするのは、
+ * オフにした項目(enabled:false)・カウンターの数え方・向きによる差を
+ * そのまま反映させるため(表示されないものを一覧に出さない)。
+ * buildPagesはitemsを順に処理するのでpagesのitemIndexは非減少であり、
+ * 隣り合う同じitemIndexをまとめるだけで一覧になる。
+ */
+export function buildOutline(pages: GongyoPage[]): GongyoOutlineItem[] {
+  const outline: GongyoOutlineItem[] = [];
+  for (const [pageIndex, page] of pages.entries()) {
+    const last = outline[outline.length - 1];
+    if (last && last.itemIndex === page.itemIndex) {
+      last.pageCount += 1;
+      continue;
+    }
+    outline.push({
+      itemIndex: page.itemIndex,
+      unitTitle: page.unitTitle,
+      ordinal: outline.length + 1,
+      firstPageIndex: pageIndex,
+      pageCount: 1,
+      counterTotal: page.counterTotal,
+    });
+  }
+  return outline;
+}
+
+/**
+ * 保存しておいた中断位置(itemIndex + その項目の何ページ目か)を、
+ * いまのpagesにおけるページ番号へ解決する。
+ * 向きの切り替えやカウンター設定の変更でその項目のページ数が減っていることが
+ * あるため、はみ出す場合はその項目の最後のページに寄せる。
+ * 項目そのものが消えている(オフにされた)場合は先頭から。
+ */
+export function resolveProgressPageIndex(
+  pages: GongyoPage[],
+  itemIndex: number,
+  pageOffset: number,
+): number {
+  if (pages.length === 0) return 0;
+  const pageCount = pages.reduce((n, page) => (page.itemIndex === itemIndex ? n + 1 : n), 0);
+  if (pageCount === 0) return 0;
+  const first = firstPageIndexOfItem(pages, itemIndex);
+  const offset = Math.min(Math.max(Math.trunc(pageOffset), 0), pageCount - 1);
+  return Math.min(first + offset, pages.length - 1);
+}
+
 /** 差定内の指定位置(preset.itemsのindex)に対応する最初のページ番号を返す(無ければ0)。
  * 縦書き⇔横書きの切り替えでページ分割が変わっても、読誦中の偈文の先頭に留まるために使う。
  * unitIdではなくitemIndexで引くのは、同じunitが差定に複数回現れる場合

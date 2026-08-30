@@ -51,6 +51,15 @@ export function GearIcon({ className }: IconProps) {
 }
 
 /** 戻る(iOSのナビゲーションバーに倣った左向きのシェブロン) */
+/** 式次第の一覧: 箇条書きの行 */
+export function ListIcon({ className }: IconProps) {
+  return (
+    <svg {...COMMON} className={className}>
+      <path d="M4.5 7h15M4.5 12h15M4.5 17h9" />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon({ className }: IconProps) {
   return (
     <svg {...COMMON} strokeWidth={2} className={className}>

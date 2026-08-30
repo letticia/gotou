@@ -1135,8 +1135,239 @@ body {
   cursor: pointer;
 }
 
+/* 現在地(式次第の何番目か)。押すと式次第の一覧が開くため、押せることが
+   分かるよう枠の体裁を .gongyo-orientation-toggle に揃える。 */
 .gongyo-position {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
   margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  min-height: var(--tap-min);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.gongyo-position:active {
+  opacity: 0.6;
+}
+
+.gongyo-position-icon {
+  width: 1em;
+  height: 1em;
+}
+
+/* 全体の進み具合を示す細い帯。数字を増やさずに残りの見当がつくようにするもので、
+   読誦の邪魔にならないよう画面のいちばん上に髪の毛ほどの太さで置く。 */
+.gongyo-progress {
+  flex-shrink: 0;
+  height: 2px;
+  background: var(--separator);
+}
+
+/* 幅にtransitionは掛けない。widthがcalc(var(...))の場合、カスタム
+   プロパティだけが変わってもwidthの指定値は同じ式のままなので、Chromeは
+   transitionを張った状態では古い使用値に留まり帯が動かなくなる(実測)。
+   ページ送りは1タップ1段の離散的な変化で、2pxの帯が滑らかに伸びる必要も
+   無いため、素直に即座に反映する。 */
+.gongyo-progress-fill {
+  width: calc(var(--gongyo-progress, 0) * 100%);
+  height: 100%;
+  background: var(--accent);
+}
+
+/* 扉の「続きから」。おつとめを中断していたときだけ出る。
+   扉は全面が「はじめから始める」タップ領域なので、そちらを選びにくく
+   しないよう控えめな体裁にし、何を選んでいるのかを一行で添える。 */
+.gongyo-resume {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-6);
+  text-align: center;
+}
+
+.gongyo-resume button {
+  min-height: var(--tap-min);
+  max-width: 100%;
+  padding: var(--space-2) var(--space-5);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.gongyo-resume button:active {
+  opacity: 0.6;
+}
+
+.gongyo-resume-note {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+/* --- 式次第の一覧 ---
+   読誦画面に重ねるシート。viewを切り替えないのは、タブバーの出入りで
+   画面が跳ねるのを避けるため(GongyoOutline.tsx冒頭)。 */
+.gongyo-outline {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+  animation: gotou-fade-in 0.15s ease-out;
+}
+
+.gongyo-outline-sheet {
+  display: flex;
+  flex-direction: column;
+  /* 一覧が短い差定ではシートも短くする。長い差定(棚経24項目)では
+     画面の8割で頭打ちにして、上に読誦画面が覗くようにする。
+     このプロジェクトはbox-sizingを既定(content-box)のままにしているため、
+     padding分がmax-heightに上乗せされないよう明示する */
+  box-sizing: border-box;
+  max-height: 80vh;
+  padding: var(--space-4) 0 calc(var(--space-6) + env(safe-area-inset-bottom));
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 25%);
+  animation: gotou-sheet-up 0.2s ease-out;
+}
+
+@keyframes gotou-sheet-up {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.gongyo-outline-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+}
+
+.gongyo-outline-header h2 {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+}
+
+.gongyo-outline-close {
+  min-height: var(--tap-min);
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.gongyo-outline-preset-name {
+  margin: 0 0 var(--space-2);
+  padding: 0 var(--space-5);
+  font-family: var(--font-content);
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+}
+
+.gongyo-outline-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gongyo-outline-item button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-5);
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-content);
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gongyo-outline-item button:active {
+  background: var(--fill-subtle);
+}
+
+/* 序数は幅を揃えて、名前の頭が縦に並ぶようにする(十念が何度も現れるため、
+   名前より先に番号で見分けられるほうが速い) */
+.gongyo-outline-ordinal {
+  flex-shrink: 0;
+  min-width: 1.6em;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+.gongyo-outline-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gongyo-outline-counter {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.gongyo-outline-here {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+/* 読み終えた項目は沈め、いま読んでいる項目だけを立てる */
+.gongyo-outline-item-done button {
+  color: var(--text-tertiary);
+}
+
+.gongyo-outline-item-current button {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.gongyo-outline-item-current .gongyo-outline-ordinal {
+  color: var(--accent);
 }
 
 .gongyo-body {
