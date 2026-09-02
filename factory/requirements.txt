@@ -1,1 +1,5 @@
 requests
+# 御法語の章ページのHTML解析(factory/src/gohogo_parse.py)。
+# <ruby>/<rt>の入れ子や装飾要素をまたいで本文を取り出すため、
+# 標準のhtml.parserではなくこちらを使っている。
+beautifulsoup4

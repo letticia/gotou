@@ -10,6 +10,10 @@ macOS向け .Dictionary を生成する。既存の取得スクリプトが出�
 - 生成物・キャッシュはすべて `output/` と `cache/` に置く(どちらも .gitignore 済み)。
   それ以外の場所に実データを書き出さない。
 - テスト・CIで実データを使わない。`tests/fixtures/` のダミー項目(約100件)だけを使う。
+- **外部ライブラリを使い始めたら必ず `requirements.txt` に足す。** 手元のPython環境に
+  たまたま入っていると気づかずに通ってしまい、CIだけが落ちる
+  (beautifulsoup4で実際に踏んだ)。確かめるなら使い捨ての仮想環境で
+  `pip install -r requirements-dev.txt` してから `pytest` を回すこと。
 
 ## 変換の方針
 
