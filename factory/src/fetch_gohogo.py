@@ -152,37 +152,44 @@ def collect_links(html, base_url):
     return links
 
 
+# 目次の実物(factory/cache/gohogo/index.html)を確認して分かった形:
+#   前篇 第n章 -> https://www.chion-in.or.jp/okotoba/f{nn}/
+#   後篇 第n章 -> https://www.chion-in.or.jp/okotoba/s{nn}/
+# 同じ階層にある first/ ・ goei/ ・ end/ (序・御詠・結)は章ではないので拾わない。
+CHAPTER_PATH_RE = re.compile(r"/okotoba/([fs])(\d{1,2})/?$")
+HEN_BY_PREFIX = {"f": "zenpen", "s": "kohen"}
+
+
 def classify_chapter_link(link):
     """目次のリンク1件が章ページなら {hen, chapter} を返す。違えばNone。
 
-    判定はリンクの文言とURLの両方を見る。目次のマークアップは実物を見てから
-    詰めるため、ここは「篇と章番号が両方読み取れるものだけを章とみなす」という
-    保守的な条件にしてある。62件そろわなければ呼び出し側が中断する。
+    URLの形を第一の手がかりにする(目次を実際に取得して確かめた形)。
+    URLが変わっていた場合に備え、リンクの文言からも読み取れるようにしてある。
+    どちらでも篇と章番号がそろわないものは章とみなさない。
+    62件そろわなければ呼び出し側が取得前に中断する。
     """
-    text = link["text"]
     url = link["url"]
-    haystack = f"{text} {url}"
+    text = link["text"]
 
+    m = CHAPTER_PATH_RE.search(urlparse(url).path)
+    if m:
+        chapter = kanji_to_int(m.group(2))
+        if chapter is not None:
+            return {"hen": HEN_BY_PREFIX[m.group(1)], "chapter": chapter}
+
+    # URLの形が変わったとき用の予備。文言から篇と章番号の両方が読めた場合のみ。
+    haystack = f"{text} {url}"
     if "前篇" in haystack or "zenpen" in url:
         hen = "zenpen"
     elif "後篇" in haystack or "後編" in haystack or "kohen" in url:
         hen = "kohen"
     else:
         return None
-
-    chapter = None
     m = re.search(r"第\s*([一二三四五六七八九十\d]+)\s*章", text)
-    if m:
-        chapter = kanji_to_int(m.group(1))
-    if chapter is None:
-        # URL末尾の連番(例 .../okotoba/zenpen/30/)を拾う
-        for segment in reversed([s for s in urlparse(url).path.split("/") if s]):
-            if segment.isdigit():
-                chapter = kanji_to_int(segment)
-                break
-    if chapter is None:
+    if not m:
         return None
-    return {"hen": hen, "chapter": chapter}
+    chapter = kanji_to_int(m.group(1))
+    return {"hen": hen, "chapter": chapter} if chapter is not None else None
 
 
 def check_robots(session, url):
