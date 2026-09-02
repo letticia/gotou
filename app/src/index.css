@@ -489,6 +489,232 @@ body {
   cursor: pointer;
 }
 
+/* --- 御法語(読み物) ---
+   勤行モードの経本(縦書き・タップでページ送り)とは別物。横書き・縦スクロールで、
+   ルビは語ごとの本物の<ruby>で振る。 */
+
+.gohogo-hen-toggle {
+  margin-top: var(--space-4);
+}
+
+.gohogo-intro-note {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+.gohogo-chapter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gohogo-chapter-list button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-3) 0.2rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--separator);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gohogo-chapter-list li:last-child button {
+  border-bottom: none;
+}
+
+/* アイコンは寸法を明示する(Icons.tsxのSVGはviewBoxだけで幅を持たない) */
+.gohogo-chapter-list svg,
+.gohogo-today-list svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+}
+
+.gohogo-chapter-nav svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.gohogo-chapter-list button:active {
+  background: var(--fill-subtle);
+}
+
+/* 章番号は幅を揃えて、章題の頭が縦に並ぶようにする */
+.gohogo-chapter-number {
+  flex-shrink: 0;
+  min-width: 2.4em;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+.gohogo-chapter-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+}
+
+.gohogo-chapter-title .title {
+  font-family: var(--font-content);
+  font-weight: bold;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gohogo-chapter-title .reading {
+  font-family: var(--font-content);
+  font-size: 0.78em;
+  color: var(--text-secondary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* その日の章の印。日付と同じ番号の章がその日の御法語 */
+.gohogo-today-mark {
+  flex-shrink: 0;
+  padding: 0.1em 0.5em;
+  border-radius: var(--radius-sm);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gohogo-chapter-label {
+  margin: 0 0 0.3em;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+/* 本文。ルビのぶん行間を広めに取る */
+.gohogo-paragraph {
+  font-family: var(--font-content);
+  line-height: 2.1;
+  margin: 0 0 1.2em;
+}
+
+.gohogo-paragraph ruby {
+  ruby-position: over;
+  ruby-align: center;
+}
+
+.gohogo-paragraph rt {
+  font-size: 0.5em;
+  color: var(--text-secondary);
+  /* ルビが本文より広がって字間を割らないようにする */
+  letter-spacing: 0;
+}
+
+.gohogo-chapter-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--separator);
+}
+
+.gohogo-chapter-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.gohogo-chapter-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.gohogo-chapter-nav button:not(:disabled):active {
+  background: var(--fill-subtle);
+}
+
+/* 辞書の検索前の画面に出す「今日の御法語」 */
+.gohogo-today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gohogo-today-list button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) 0.2rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--separator);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gohogo-today-list li:last-child button {
+  border-bottom: none;
+}
+
+.gohogo-today-list button:active {
+  background: var(--fill-subtle);
+}
+
+.gohogo-today-hen {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+.gohogo-today-chapter {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.gohogo-today-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-content);
+  font-weight: bold;
+}
+
 /* 浄全DBの検索結果をアプリ内に表示するパネル。
    中身は外部サイトのページそのものなので、枠と出典表記で「ここから先は外部」と
    分かるようにしている(こちらは本文を取得も保持もしない)。 */

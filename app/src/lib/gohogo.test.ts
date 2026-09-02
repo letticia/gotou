@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  GOHOGO_CHAPTERS_PER_HEN,
   GOHOGO_DAILY_UNIT_ID,
+  chapterBody,
+  chapterClauses,
   chapterNumberForDate,
   chapterToKanji,
+  clauseRuby,
+  clauseText,
+  listChapters,
   formatGohogoIntroLabel,
   formatGohogoUnitTitle,
   getDailyGohogo,
@@ -10,6 +16,7 @@ import {
   presetUsesDailyGohogo,
   withDailyGohogo,
 } from "./gohogo";
+import type { GohogoToken } from "./gohogo";
 import type { GongyoPreset, GongyoUnit } from "./gongyo";
 
 /** ローカル日付で作る(chapterNumberForDateは端末ローカルの「日」を見る) */
@@ -74,10 +81,66 @@ describe("getGohogoChapter", () => {
   it("keeps text paired with a kana reading", () => {
     const chapter = getGohogoChapter("zenpen", 30);
     expect(chapter).not.toBeNull();
-    for (const clause of chapter!.body) {
+    for (const clause of chapterBody(chapter!)) {
       expect(clause.text.length).toBeGreaterThan(0);
       expect(clause.ruby.length).toBeGreaterThan(0);
       expect(clause.ruby).not.toMatch(/[一-鿿]/);
+    }
+  });
+
+  it("keeps the word-level pairing needed for inline ruby", () => {
+    const chapter = getGohogoChapter("kohen", 1)!;
+    const first = chapter.paragraphs[0].clauses[0];
+    expect(first.tokens[0]).toEqual(["浄土門", "じょうどもん"]);
+    // ルビの無い語は1要素のまま
+    expect(first.tokens.some((token) => token.length === 1)).toBe(true);
+  });
+
+  it("keeps the paragraph breaks", () => {
+    const chapter = getGohogoChapter("kohen", 1)!;
+    expect(chapter.paragraphs.length).toBeGreaterThan(1);
+    for (const para of chapter.paragraphs) {
+      expect(para.clauses.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("derivations from the tokens", () => {
+  const clause = {
+    tokens: [["浄土門", "じょうどもん"], ["というは、"], ["この"]] as GohogoToken[],
+  };
+
+  it("joins the surfaces for the text", () => {
+    expect(clauseText(clause)).toBe("浄土門というは、この");
+  });
+
+  it("uses the reading where there is one, the surface where there is not", () => {
+    expect(clauseRuby(clause)).toBe("じょうどもんというは、この");
+  });
+
+  it("flattens paragraphs into clauses in order", () => {
+    const chapter = getGohogoChapter("kohen", 1)!;
+    const expected = chapter.paragraphs.reduce((n, p) => n + p.clauses.length, 0);
+    expect(chapterClauses(chapter).length).toBe(expected);
+    expect(chapterBody(chapter).length).toBe(expected);
+  });
+});
+
+describe("listChapters", () => {
+  it("returns all 31 chapters in order", () => {
+    for (const hen of ["zenpen", "kohen"] as const) {
+      const chapters = listChapters(hen);
+      expect(chapters.length).toBe(GOHOGO_CHAPTERS_PER_HEN);
+      expect(chapters.map((c) => c.chapter)).toEqual(
+        Array.from({ length: GOHOGO_CHAPTERS_PER_HEN }, (_, i) => i + 1),
+      );
+    }
+  });
+
+  it("gives every chapter a title and a kana reading", () => {
+    for (const chapter of listChapters("zenpen")) {
+      expect(chapter.title.length).toBeGreaterThan(0);
+      expect(chapter.titleReading).not.toMatch(/[一-鿿]/);
     }
   });
 });

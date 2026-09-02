@@ -160,12 +160,37 @@ def split_tokens_at_punctuation(tokens):
     return out
 
 
+def token_to_json(text, reading):
+    """トークンをJSONに書き出す形にする。[表記] か [表記, 読み] の2通り。
+
+    ルビの無い語は読みを持たない(表記がそのまま読みになる)。ただし知恩院の
+    ページでルビが落ちている語だけは gohogo_fixups の表で補い、読み付きにする。
+    """
+    if reading is not None:
+        return [text, reading]
+    supplied = apply_missing_ruby(text)
+    return [text] if supplied == text else [text, supplied]
+
+
+def clause_text(clause):
+    """句の表記(トークンの表記を連ねたもの)"""
+    return "".join(token[0] for token in clause["tokens"])
+
+
+def clause_ruby(clause):
+    """句の読み(ルビのある語は読みに、無い語は表記のまま)"""
+    return "".join(token[1] if len(token) > 1 else token[0] for token in clause["tokens"])
+
+
 def build_clauses(tokens, max_chars=MAX_CLAUSE_CHARS):
-    """トークン列を句(text/ruby の対)にまとめる。
+    """トークン列を句にまとめる。句は {"tokens": [[表記(, 読み)], ...]}。
 
     句読点の直後で区切るのを基本とし、それでも max_chars を超える場合は
     超える手前のトークン境界で切る。ルビ付きトークンの途中では切らないので、
     表記と読みの対応は必ず保たれる。
+
+    表記と読みを1本の文字列に潰さずトークン列のまま残すのは、読み物画面で
+    語ごとに <ruby> を振るため(勤行用の text/ruby はアプリ側で導出する)。
     """
     pieces = split_tokens_at_punctuation(tokens)
     clauses = []
@@ -174,12 +199,7 @@ def build_clauses(tokens, max_chars=MAX_CLAUSE_CHARS):
     def flush():
         if not current:
             return
-        text = "".join(t for t, _ in current)
-        # 地の文はそのまま読みになるが、ルビ付け漏れの語だけは表で補う
-        # (根拠は gohogo_fixups.MISSING_RUBY に記録。補えない漢字は検証で捕まる)
-        ruby = "".join(r if r is not None else apply_missing_ruby(t)
-                       for t, r in current)
-        clauses.append({"text": text, "ruby": ruby})
+        clauses.append({"tokens": [token_to_json(t, r) for t, r in current]})
         current.clear()
 
     for text, reading in pieces:
@@ -195,11 +215,8 @@ def build_clauses(tokens, max_chars=MAX_CLAUSE_CHARS):
     # 句読点で切った結果あまりに短い句が続く場合、上限の範囲でまとめ直す
     merged = []
     for clause in clauses:
-        if merged and len(merged[-1]["text"]) + len(clause["text"]) <= max_chars:
-            merged[-1] = {
-                "text": merged[-1]["text"] + clause["text"],
-                "ruby": merged[-1]["ruby"] + clause["ruby"],
-            }
+        if merged and len(clause_text(merged[-1])) + len(clause_text(clause)) <= max_chars:
+            merged[-1] = {"tokens": merged[-1]["tokens"] + clause["tokens"]}
         else:
             merged.append(clause)
     return merged
@@ -254,13 +271,17 @@ def parse_chapter(html):
     if article.find("dl", class_="gendai") and genbun.find("dl", class_="gendai"):
         raise ParseError("genbun の内側に現代語訳があります(抽出条件の見直しが必要)")
 
-    body = []
+    # 段落の切れ目を残す。読み物として読むときに要るため
+    # (勤行側は段落を跨いで平坦にするだけでよい)。
+    paragraphs = []
     for para in genbun.find_all("p", recursive=False):
         tokens = tokenize_ruby(para)
         if not tokens:
             continue
-        body.extend(build_clauses(tokens))
-    if not body:
+        clauses = build_clauses(tokens)
+        if clauses:
+            paragraphs.append({"clauses": clauses})
+    if not paragraphs:
         raise ParseError("本文が空です")
 
     return {
@@ -270,7 +291,7 @@ def parse_chapter(html):
         "title": title,
         "titleReading": title_reading,
         "genbunSource": genbun_source,
-        "body": body,
+        "paragraphs": paragraphs,
         # shared/ には書き出さないこと(校閲用の対照表専用)
         "site_summary": _text_of(header.find("p", class_="lead")),
     }

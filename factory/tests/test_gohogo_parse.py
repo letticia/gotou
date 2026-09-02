@@ -13,10 +13,17 @@ from gohogo_parse import (
     MAX_CLAUSE_CHARS,
     ParseError,
     build_clauses,
+    clause_ruby,
+    clause_text,
     kanji_to_int,
     parse_chapter,
     tokenize_ruby,
 )
+
+
+def all_clauses(chapter):
+    """章の全段落の句を平坦にして返す"""
+    return [c for para in chapter["paragraphs"] for c in para["clauses"]]
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "gohogo")
 
@@ -57,21 +64,29 @@ class TestParseChapter:
         ch = parse_chapter(load("zenpen-01.html"))
         assert ch["genbunSource"] == "ダミー底本"
 
-    def test_body_pairs_text_with_a_kana_reading(self):
+    def test_body_keeps_word_level_pairs(self):
+        # 語ごとの対応を残す(読み物画面で <ruby> を振るため)
         ch = parse_chapter(load("zenpen-01.html"))
-        assert ch["body"][0]["text"] == "試験のための文なり。二つ目の句なり。"
-        assert ch["body"][0]["ruby"] == "しけんのためのぶんなり。ふたつめのくなり。"
+        clause = all_clauses(ch)[0]
+        assert clause["tokens"][:3] == [["試験", "しけん"], ["のための"], ["文", "ぶん"]]
 
-    def test_each_paragraph_starts_a_new_clause(self):
+    def test_text_and_reading_can_be_derived_from_the_tokens(self):
+        ch = parse_chapter(load("zenpen-01.html"))
+        clause = all_clauses(ch)[0]
+        assert clause_text(clause) == "試験のための文なり。二つ目の句なり。"
+        assert clause_ruby(clause) == "しけんのためのぶんなり。ふたつめのくなり。"
+
+    def test_keeps_the_paragraph_breaks(self):
+        # 読み物として読むときに段落の切れ目が要る
         ch = parse_chapter(load("kohen-30.html"))
-        assert len(ch["body"]) == 2
-        assert ch["body"][0]["text"].startswith("後篇の")
-        assert ch["body"][1]["text"].startswith("二段落目")
+        assert len(ch["paragraphs"]) == 2
+        assert clause_text(ch["paragraphs"][0]["clauses"][0]).startswith("後篇の")
+        assert clause_text(ch["paragraphs"][1]["clauses"][0]).startswith("二段落目")
 
     def test_does_not_take_the_modern_translation(self):
         # 現代語訳は2010年刊行物由来。抽出したら掟違反になる
         ch = parse_chapter(load("zenpen-01.html"))
-        joined = "".join(b["text"] for b in ch["body"])
+        joined = "".join(clause_text(c) for c in all_clauses(ch))
         assert "現代語訳" not in joined
         assert "抽出されてはいけません" not in joined
 
@@ -89,35 +104,36 @@ class TestParseChapter:
 class TestClauseSplitting:
     def test_long_paragraph_is_split_within_the_limit(self):
         ch = parse_chapter(load("zenpen-02.html"))
-        assert len(ch["body"]) > 1
-        for clause in ch["body"]:
-            assert len(clause["text"]) <= MAX_CLAUSE_CHARS
+        clauses = all_clauses(ch)
+        assert len(clauses) > 1
+        for clause in clauses:
+            assert len(clause_text(clause)) <= MAX_CLAUSE_CHARS
 
     def test_split_never_breaks_a_ruby_word(self):
         # 表記と読みの対応が崩れていないこと。「甲乙丙」が割れていれば
         # そのぶん読みの「こうおつへい」も崩れる
         ch = parse_chapter(load("zenpen-02.html"))
-        for clause in ch["body"]:
-            assert clause["text"].count("甲乙丙") == clause["ruby"].count("こうおつへい")
+        for clause in all_clauses(ch):
+            assert clause_text(clause).count("甲乙丙") == clause_ruby(clause).count("こうおつへい")
 
     def test_reading_is_kana_only(self):
         for name in ("zenpen-01.html", "zenpen-02.html", "kohen-30.html"):
             ch = parse_chapter(load(name))
-            for clause in ch["body"]:
-                for ch_ in clause["ruby"]:
+            for clause in all_clauses(ch):
+                for ch_ in clause_ruby(clause):
                     assert not ("一" <= ch_ <= "鿿"), (
-                        f"{name}: 読みに漢字が残っている: {clause['ruby']}"
+                        f"{name}: 読みに漢字が残っている: {clause_ruby(clause)}"
                     )
 
     def test_no_empty_clause(self):
         ch = parse_chapter(load("zenpen-02.html"))
-        assert all(clause["text"] for clause in ch["body"])
-        assert all(clause["ruby"] for clause in ch["body"])
+        assert all(clause_text(clause) for clause in all_clauses(ch))
+        assert all(clause_ruby(clause) for clause in all_clauses(ch))
 
     def test_build_clauses_keeps_plain_text_without_ruby(self):
         tokens = [("ただ", None), ("念仏", "ねんぶつ"), ("すべし。", None)]
         assert build_clauses(tokens) == [
-            {"text": "ただ念仏すべし。", "ruby": "ただねんぶつすべし。"}
+            {"tokens": [["ただ"], ["念仏", "ねんぶつ"], ["すべし。"]]}
         ]
 
     def test_tokenize_ruby_ignores_decorative_wrappers(self):
@@ -144,6 +160,15 @@ class TestFixups:
     def test_supplies_a_reading_the_page_forgot(self):
         from gohogo_fixups import apply_missing_ruby
         assert apply_missing_ruby("、釈迦にも") == "、しゃかにも"
+
+    def test_a_supplied_reading_becomes_a_token_with_a_reading(self):
+        # ルビの無い語でも、表で補ったものは [表記, 読み] として残す
+        # 句読点の直後で割られるので「、」と「釈迦にも」の2トークンになる
+        tokens = build_clauses([("、釈迦にも", None)])
+        assert tokens == [{"tokens": [["、"], ["釈迦にも", "しゃかにも"]]}]
+
+    def test_plain_text_stays_a_one_element_token(self):
+        assert build_clauses([("ただし。", None)]) == [{"tokens": [["ただし。"]]}]
 
     def test_leaves_unknown_kanji_alone_so_validation_catches_them(self):
         from gohogo_fixups import apply_missing_ruby

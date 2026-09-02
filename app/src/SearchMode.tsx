@@ -11,7 +11,7 @@ import {
   acquisitionProgressText,
 } from "./lib/dictionaryAcquisition";
 import type { AcquisitionProgress } from "./lib/dictionaryAcquisition";
-import { ChevronLeftIcon } from "./Icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
 import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import { normalizeSearchInput } from "./lib/variants";
 import { parseInternalLinkTarget } from "./lib/internalLinks";
@@ -30,13 +30,10 @@ import {
 } from "./lib/tenkyoSearch";
 import { JOZEN_SEARCH_ACTION, submitJozenSearch } from "./lib/jozenSearch";
 import { loadGongyoPresets, loadGongyoUnits } from "./lib/gongyo";
-import {
-  FONT_SCALE_STEPS,
-  canDecrease,
-  canIncrease,
-  loadScaleIndex,
-  saveScaleIndex,
-} from "./lib/dictFontScale";
+import FontScaleRow from "./FontScaleRow";
+import { chapterNumberForDate, chapterToKanji, getGohogoChapter } from "./lib/gohogo";
+import { GOHOGO_HEN_LABELS } from "./lib/gohogoHen";
+import type { GohogoHen } from "./lib/gohogoHen";
 
 /** 見出し語で引く(既定) / 一節から典拠をさがす(逆引き。docs/tenkyo-spec.md B) */
 type QueryMode = "headword" | "tenkyo";
@@ -64,7 +61,12 @@ type LoadState =
   | { status: "ready" }
   | { status: "error"; message: string };
 
-export default function SearchMode() {
+interface SearchModeProps {
+  /** 「今日の御法語」から御法語タブのその章へ渡す */
+  onOpenGohogo?: (hen: GohogoHen, chapter: number) => void;
+}
+
+export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
   const [db, setDb] = useState<DictionaryDb | null>(null);
   const [loadState, setLoadState] = useState<LoadState>({ status: "checking" });
   const [query, setQuery] = useState("");
@@ -76,7 +78,6 @@ export default function SearchMode() {
   const queryInputRef = useRef<HTMLInputElement>(null);
   // 「ダウンロード開始」ボタンから、effect内で定義されたloadDictionaryを呼べるようにする
   const loadDictionaryRef = useRef<() => void>(() => {});
-  const [scaleIndex, setScaleIndex] = useState(() => loadScaleIndex());
   // 一時的な通知(オフライン時に外部リンクを踏んだ場合など)。数秒で自動的に消す
   const [toast, setToast] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useState<QueryMode>("headword");
@@ -88,55 +89,9 @@ export default function SearchMode() {
   const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
   const [suggestionSeed, setSuggestionSeed] = useState(0);
 
-  // 辞書モードの文字サイズ(検索結果一覧・本文とも).appのfont-sizeがこの値を
-  // 参照するので、:rootに置けば.appへ継承される(--app-font-familyと同じやり方)
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      "--dict-font-scale",
-      String(FONT_SCALE_STEPS[scaleIndex]),
-    );
-  }, [scaleIndex]);
-
-  function handleDecreaseFontScale() {
-    setScaleIndex((prev) => {
-      // disabled属性の再描画が間に合わない連続クリックでも配列の範囲外に
-      // ならないようclampする(disabledだけに頼らない)
-      const next = Math.max(0, prev - 1);
-      saveScaleIndex(next);
-      return next;
-    });
-  }
-
-  function handleIncreaseFontScale() {
-    setScaleIndex((prev) => {
-      const next = Math.min(FONT_SCALE_STEPS.length - 1, prev + 1);
-      saveScaleIndex(next);
-      return next;
-    });
-  }
-
-  const fontScaleRow = (
-    <div className="font-scale-row">
-      <button
-        type="button"
-        className="font-scale-button"
-        onClick={handleDecreaseFontScale}
-        disabled={!canDecrease(scaleIndex)}
-        aria-label="文字を小さく"
-      >
-        A-
-      </button>
-      <button
-        type="button"
-        className="font-scale-button"
-        onClick={handleIncreaseFontScale}
-        disabled={!canIncrease(scaleIndex)}
-        aria-label="文字を大きく"
-      >
-        A+
-      </button>
-    </div>
-  );
+  // 文字サイズのステッパーは御法語の読み物と共用の部品(FontScaleRow.tsx)。
+  // 状態・保存・CSS変数はあちらが面倒みる。
+  const fontScaleRow = <FontScaleRow />;
 
   useEffect(() => {
     let cancelled = false;
@@ -399,6 +354,17 @@ export default function SearchMode() {
     setJozenPanelKeyword(null);
   }, [query, queryMode]);
 
+  // 検索前の画面に出す「今日の御法語」。日付はマウント時に1回だけ決める
+  // (日をまたいだら次に辞書を開いたときに変わればよい)
+  const todayGohogo = useMemo(() => {
+    const chapter = chapterNumberForDate(new Date());
+    return (["zenpen", "kohen"] as GohogoHen[])
+      .map((hen) => ({ hen, chapter: getGohogoChapter(hen, chapter) }))
+      .filter((entry): entry is { hen: GohogoHen; chapter: NonNullable<typeof entry.chapter> } =>
+        entry.chapter !== null,
+      );
+  }, []);
+
   // 検索前の画面に出す収録語を引く。辞書が開けた時と「ほかの語を見る」の押下時だけ。
   useEffect(() => {
     if (!db) {
@@ -602,6 +568,26 @@ export default function SearchMode() {
           </ul>
           {db && query && results.length === 0 && (
             <p className="empty">該当する項目がありません</p>
+          )}
+          {/* 毎日ひとつ御法語に出あう入口。押すと御法語タブのその章が開く */}
+          {!query && onOpenGohogo && todayGohogo.length > 0 && (
+            <section className="preset-section gohogo-today-section">
+              <h3>今日の御法語</h3>
+              <ul className="gohogo-today-list">
+                {todayGohogo.map(({ hen, chapter }) => (
+                  <li key={hen}>
+                    <button type="button" onClick={() => onOpenGohogo(hen, chapter.chapter)}>
+                      <span className="gohogo-today-hen">{GOHOGO_HEN_LABELS[hen]}</span>
+                      <span className="gohogo-today-chapter">
+                        第{chapterToKanji(chapter.chapter)}章
+                      </span>
+                      <span className="gohogo-today-title">{chapter.title}</span>
+                      <ChevronRightIcon />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
           {/* 検索前の余白で語に出あえるようにする。押せばその項目へ、
               入力を始めれば通常の検索結果に切り替わる */}

@@ -16,16 +16,24 @@ import type { GohogoHen } from "./gohogoHen";
 /** 差定のitemsがこのidを指していると、その日の章に置き換わる */
 export const GOHOGO_DAILY_UNIT_ID = "gohogo-daily";
 
+/** 本文の最小単位。`[表記]` はルビ無し、`[表記, 読み]` はルビ付き。
+ *  語ごとの対応を残してあるので、読み物画面では本物の <ruby> を振れる。 */
+export type GohogoToken = [string] | [string, string];
+
 export interface GohogoClause {
-  text: string;
-  ruby: string;
+  tokens: GohogoToken[];
+}
+
+/** 段落。読み物として読むときの切れ目(勤行側は跨いで平坦にする) */
+export interface GohogoParagraph {
+  clauses: GohogoClause[];
 }
 
 export interface GohogoChapter {
   chapter: number;
   title: string;
   titleReading: string;
-  body: GohogoClause[];
+  paragraphs: GohogoParagraph[];
   source: { name: string; url: string; license: string };
 }
 
@@ -62,6 +70,36 @@ export function chapterNumberForDate(date: Date): number {
   return date.getDate();
 }
 
+/** 句の表記(トークンの表記を連ねたもの) */
+export function clauseText(clause: GohogoClause): string {
+  return clause.tokens.map((token) => token[0]).join("");
+}
+
+/** 句の読み(ルビのある語は読みに、無い語は表記のまま。結果はかなのみ) */
+export function clauseRuby(clause: GohogoClause): string {
+  return clause.tokens.map((token) => token[1] ?? token[0]).join("");
+}
+
+/** 段落を跨いで句を平坦に並べる(勤行はページ送りの単位が句なので段落を見ない) */
+export function chapterClauses(chapter: GohogoChapter): GohogoClause[] {
+  return chapter.paragraphs.flatMap((para) => para.clauses);
+}
+
+/** 勤行のunitのbodyの形に直す。トークン列から表記と読みを導出する */
+export function chapterBody(chapter: GohogoChapter): { text: string; ruby: string }[] {
+  return chapterClauses(chapter).map((clause) => ({
+    text: clauseText(clause),
+    ruby: clauseRuby(clause),
+  }));
+}
+
+/** その篇の全章(章番号の順)。読み物の章一覧に使う */
+export function listChapters(hen: GohogoHen): GohogoChapter[] {
+  return henData.get(hen)?.chapters ?? [];
+}
+
+export const GOHOGO_CHAPTERS_PER_HEN = 31;
+
 export function getGohogoChapter(hen: GohogoHen, chapter: number): GohogoChapter | null {
   const data = henData.get(hen);
   if (!data) return null;
@@ -87,7 +125,8 @@ export function formatGohogoIntroLabel(hen: GohogoHen, chapter: GohogoChapter): 
  *
  * unitのスキーマは広げない。既存のunitと同じ形の値を組み立てて返すだけなので、
  * buildPages以降(縦書きの2句連結・長句分割・ページ分け)は通常のunitと同じ扱いになる。
- * paginatedにするのは、章が4〜10句あり1画面にまとめると字が小さくなりすぎるため。
+ * paginatedにするのは、1章が数十句あり1画面にまとめると字が小さくなりすぎるため。
+ * 表記と読みはトークン列から導出する(データは語ごとの対応を保っている)。
  */
 export function getDailyGohogo(date: Date, hen: GohogoHen): GongyoUnit | null {
   const chapter = getGohogoChapter(hen, chapterNumberForDate(date));
@@ -97,7 +136,7 @@ export function getDailyGohogo(date: Date, hen: GohogoHen): GongyoUnit | null {
     title: formatGohogoUnitTitle(hen, chapter),
     reading: chapter.titleReading,
     paginated: true,
-    body: chapter.body.map((clause) => ({ text: clause.text, ruby: clause.ruby })),
+    body: chapterBody(chapter),
     source: chapter.source,
   };
 }

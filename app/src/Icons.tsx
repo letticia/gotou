@@ -51,6 +51,19 @@ export function GearIcon({ className }: IconProps) {
 }
 
 /** 戻る(iOSのナビゲーションバーに倣った左向きのシェブロン) */
+/** 御法語タブ: 巻子(巻物)。両端の軸と、その間に開いた紙面。 */
+export function ScrollIcon({ className }: IconProps) {
+  return (
+    <svg {...COMMON} className={className}>
+      <path d="M6.5 4.5h11" />
+      <path d="M6.5 19.5h11" />
+      <path d="M6.5 4.5a1.6 1.6 0 0 0 0 3.2h11a1.6 1.6 0 0 1 0-3.2" />
+      <path d="M6.5 19.5a1.6 1.6 0 0 1 0-3.2h11a1.6 1.6 0 0 0 0 3.2" />
+      <path d="M9.5 10.5h5M9.5 13.5h5" />
+    </svg>
+  );
+}
+
 /** 式次第の一覧: 箇条書きの行 */
 export function ListIcon({ className }: IconProps) {
   return (

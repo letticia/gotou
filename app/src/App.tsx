@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import SearchMode from "./SearchMode";
 import GongyoMode from "./GongyoMode";
+import GohogoMode from "./GohogoMode";
+import FontScaleRow from "./FontScaleRow";
 import SettingsScreen from "./SettingsScreen";
 import AboutScreen from "./AboutScreen";
 import HelpScreen from "./HelpScreen";
-import { BookIcon, FlameIcon, GearIcon } from "./Icons";
+import { BookIcon, FlameIcon, GearIcon, ScrollIcon } from "./Icons";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
 import { useServiceWorkerUpdate } from "./useServiceWorkerUpdate";
@@ -15,7 +17,13 @@ import { loadCounterMode, saveCounterMode } from "./lib/gongyoCounterMode";
 import type { GohogoHen } from "./lib/gohogoHen";
 import { loadGohogoHen, saveGohogoHen } from "./lib/gohogoHen";
 
-type Mode = "search" | "gongyo";
+type Mode = "search" | "gohogo" | "gongyo";
+
+const MODE_TITLES: Record<Mode, string> = {
+  search: "辞書",
+  gohogo: "御法語",
+  gongyo: "勤行",
+};
 
 const FALLBACK_FONT_STACK = 'system-ui, -apple-system, "Hiragino Sans", sans-serif';
 
@@ -25,6 +33,11 @@ export default function App() {
   const [showAbout, setShowAbout] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
+  // 辞書の「今日の御法語」から御法語タブのその章へ渡すための受け渡し
+  // (差定の共有URLで勤行へ飛ばす pendingImport と同じ流儀)
+  const [gohogoTarget, setGohogoTarget] = useState<{ hen: GohogoHen; chapter: number } | null>(
+    null,
+  );
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
   // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
   // 設定画面へ値を渡し・変更を保存する橋渡し役のみ(GongyoModeへは渡さない)
@@ -69,6 +82,11 @@ export default function App() {
   function handleGohogoHenChange(next: GohogoHen) {
     setGohogoHen(next);
     saveGohogoHen(next);
+  }
+
+  function handleOpenGohogo(hen: GohogoHen, chapter: number) {
+    setGohogoTarget({ hen, chapter });
+    setMode("gohogo");
   }
 
   const immersive = mode === "gongyo" && gongyoImmersive && !showSettings;
@@ -118,7 +136,7 @@ export default function App() {
         <>
           {!immersive && (
             <header className="nav-bar">
-              <h1 className="nav-bar-title">{mode === "search" ? "辞書" : "勤行"}</h1>
+              <h1 className="nav-bar-title">{MODE_TITLES[mode]}</h1>
               <button
                 type="button"
                 className="nav-bar-button"
@@ -129,9 +147,15 @@ export default function App() {
               </button>
             </header>
           )}
-          {mode === "search" ? (
-            <SearchMode />
-          ) : (
+          {mode === "search" && <SearchMode onOpenGohogo={handleOpenGohogo} />}
+          {mode === "gohogo" && (
+            <GohogoMode
+              initialTarget={gohogoTarget}
+              onTargetHandled={() => setGohogoTarget(null)}
+              fontScaleRow={<FontScaleRow />}
+            />
+          )}
+          {mode === "gongyo" && (
             <GongyoMode
               pendingImport={pendingImport}
               onImportHandled={() => setPendingImport(null)}
@@ -150,6 +174,15 @@ export default function App() {
           >
             <BookIcon />
             <span>辞書</span>
+          </button>
+          <button
+            type="button"
+            className={mode === "gohogo" ? "tab-bar-item active" : "tab-bar-item"}
+            onClick={() => setMode("gohogo")}
+            aria-current={mode === "gohogo" ? "page" : undefined}
+          >
+            <ScrollIcon />
+            <span>御法語</span>
           </button>
           <button
             type="button"

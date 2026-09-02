@@ -58,6 +58,29 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
         </ul>
       </section>
 
+      <h3 className="settings-subhead">御法語を読む</h3>
+      <section className="settings-group settings-textblock">
+        <p className="settings-body-text">
+          {"下のタブの「御法語」を開くと、『元祖大師御法語』(前篇31章・後篇31章)を"
+            + "読み物として読めます。"}
+        </p>
+        <ul className="settings-list">
+          <li>前篇・後篇を切り替えて、31章の一覧から読みたい章を選べます。</li>
+          <li>
+            {"その日の日付と同じ番号の章に「今日」の印が付きます(1日なら第一章)。"}
+          </li>
+          <li>
+            {"本文には語ごとにふりがなが付きます。「A-」「A+」で文字の大きさを"
+              + "変えられます。"}
+          </li>
+          <li>章の末尾の「前の章」「次の章」で通して読めます。</li>
+          <li>
+            {"辞書の検索前の画面にも「今日の御法語」として前篇・後篇の当日の章が出ます。"
+              + "タップするとその章が開きます。"}
+          </li>
+        </ul>
+      </section>
+
       <h3 className="settings-subhead">一節から典拠をさがす</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">

@@ -18,6 +18,11 @@ from build_gohogo import (
 )
 from gohogo_parse import MAX_CLAUSE_CHARS, parse_chapter
 
+
+def paragraphs_of(*clause_token_lists):
+    """検証用に、句のトークン列から paragraphs の形を組み立てる"""
+    return [{"clauses": [{"tokens": tokens} for tokens in clause_token_lists]}]
+
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "gohogo")
 
 
@@ -26,7 +31,7 @@ def sample_chapter(**overrides):
         "chapter": 1,
         "title": "試験章題",
         "titleReading": "しけんしょうだい",
-        "body": [{"text": "ただ念仏すべし。", "ruby": "ただねんぶつすべし。"}],
+        "paragraphs": paragraphs_of([["ただ"], ["念仏", "ねんぶつ"], ["すべし。"]]),
         "source": {"name": "ダミー", "url": "https://example.invalid/f01/", "license": "PD"},
     }
     base.update(overrides)
@@ -70,16 +75,20 @@ class TestToOutputChapter:
         parsed["url"] = "https://example.invalid/f01/"
         assert parsed["site_summary"]
         out = to_output_chapter(parsed, "2026-09")
-        assert set(out) == {"chapter", "title", "titleReading", "body", "source"}
+        assert set(out) == {"chapter", "title", "titleReading", "paragraphs", "source"}
         assert parsed["site_summary"] not in json.dumps(out, ensure_ascii=False)
 
-    def test_body_keeps_only_text_and_ruby(self):
+    def test_body_keeps_only_the_tokens(self):
         parsed = parse_chapter(open(os.path.join(FIXTURES_DIR, "zenpen-02.html"),
                                     encoding="utf-8").read())
         parsed["url"] = "https://example.invalid/f02/"
         out = to_output_chapter(parsed, "2026-09")
-        for clause in out["body"]:
-            assert set(clause) == {"text", "ruby"}
+        for para in out["paragraphs"]:
+            assert set(para) == {"clauses"}
+            for clause in para["clauses"]:
+                assert set(clause) == {"tokens"}
+                for token in clause["tokens"]:
+                    assert 1 <= len(token) <= 2
 
 
 class TestValidateHen:
@@ -108,22 +117,34 @@ class TestValidateHen:
         assert any("titleReading に漢字" in p for p in problems)
 
     def test_reports_kanji_left_in_a_clause_reading(self):
-        bad = sample_chapter(body=[{"text": "ただ念仏すべし。", "ruby": "ただ念仏すべし。"}])
+        # 読みを持たないトークンの表記に漢字が残っていると、導出した読みにも残る
+        bad = sample_chapter(paragraphs=paragraphs_of([["ただ念仏すべし。"]]))
         problems = validate_hen("zenpen", [bad], require_full=False)
-        assert any("ruby に漢字" in p for p in problems)
+        assert any("読みに漢字" in p for p in problems)
 
     def test_reports_an_empty_body(self):
-        problems = validate_hen("zenpen", [sample_chapter(body=[])], require_full=False)
+        problems = validate_hen("zenpen", [sample_chapter(paragraphs=[])],
+                                require_full=False)
         assert any("本文が空" in p for p in problems)
 
     def test_reports_an_empty_clause(self):
-        bad = sample_chapter(body=[{"text": "", "ruby": "よみ"}])
+        bad = sample_chapter(paragraphs=paragraphs_of([]))
         problems = validate_hen("zenpen", [bad], require_full=False)
-        assert any("text が空" in p for p in problems)
+        assert any("tokens が空" in p for p in problems)
+
+    def test_reports_a_token_with_no_surface(self):
+        bad = sample_chapter(paragraphs=paragraphs_of([["", "よみ"]]))
+        problems = validate_hen("zenpen", [bad], require_full=False)
+        assert any("表記が空のトークン" in p for p in problems)
+
+    def test_reports_a_malformed_token(self):
+        bad = sample_chapter(paragraphs=paragraphs_of([["あ", "い", "う"]]))
+        problems = validate_hen("zenpen", [bad], require_full=False)
+        assert any("トークンの形" in p for p in problems)
 
     def test_reports_a_clause_over_the_limit(self):
         long_text = "あ" * (MAX_CLAUSE_CHARS + 1)
-        bad = sample_chapter(body=[{"text": long_text, "ruby": long_text}])
+        bad = sample_chapter(paragraphs=paragraphs_of([[long_text]]))
         problems = validate_hen("zenpen", [bad], require_full=False)
         assert any("字を超えています" in p for p in problems)
 
@@ -165,6 +186,9 @@ class TestEndToEnd:
         assert data["hen"] == "zenpen" and data["henLabel"] == "前篇"
         assert [c["chapter"] for c in data["chapters"]] == [1, 2]
         assert data["chapters"][0]["title"] == "試験章題"
+        assert data["chapters"][0]["paragraphs"][0]["clauses"][0]["tokens"][0] == [
+            "試験", "しけん",
+        ]
         # サイト掲載の要約がどこにも混ざっていないこと
         assert "ダミーの要約文である。" not in (out / "zenpen.json").read_text(encoding="utf-8")
         # 現代語訳も混ざっていないこと

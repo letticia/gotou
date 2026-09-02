@@ -23,7 +23,14 @@ import json
 import os
 import sys
 
-from gohogo_parse import HEN_LABELS, MAX_CLAUSE_CHARS, ParseError, parse_chapter
+from gohogo_parse import (
+    HEN_LABELS,
+    MAX_CLAUSE_CHARS,
+    ParseError,
+    clause_ruby,
+    clause_text,
+    parse_chapter,
+)
 
 FACTORY_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO_DIR = os.path.dirname(FACTORY_DIR)
@@ -81,9 +88,19 @@ def to_output_chapter(chapter, fetched_ym):
         "chapter": chapter["chapter"],
         "title": chapter["title"],
         "titleReading": chapter["titleReading"],
-        "body": [{"text": c["text"], "ruby": c["ruby"]} for c in chapter["body"]],
+        "paragraphs": [
+            {"clauses": [{"tokens": clause["tokens"]} for clause in para["clauses"]]}
+            for para in chapter["paragraphs"]
+        ],
         "source": build_source(chapter, fetched_ym),
     }
+
+
+def iter_clauses(chapter):
+    """章の全段落の句を順に返す(検証と集計用)"""
+    for para in chapter.get("paragraphs") or []:
+        for clause in para.get("clauses") or []:
+            yield clause
 
 
 def has_kanji(text):
@@ -115,22 +132,66 @@ def validate_hen(hen, chapters, require_full=True):
             problems.append(f"{where}: source.url が空です")
         if has_kanji(ch.get("titleReading", "")):
             problems.append(f"{where}: titleReading に漢字が残っています")
-        body = ch.get("body") or []
-        if not body:
+        clauses = list(iter_clauses(ch))
+        if not clauses:
             problems.append(f"{where}: 本文が空です")
-        for i, clause in enumerate(body, 1):
-            text, ruby = clause.get("text", ""), clause.get("ruby", "")
+        for i, clause in enumerate(clauses, 1):
+            tokens = clause.get("tokens") or []
+            if not tokens:
+                problems.append(f"{where} 第{i}句: tokens が空です")
+                continue
+            if any(not token or not token[0] for token in tokens):
+                problems.append(f"{where} 第{i}句: 表記が空のトークンがあります")
+            if any(len(token) > 2 for token in tokens):
+                problems.append(f"{where} 第{i}句: トークンの形が [表記(, 読み)] ではありません")
+            # 勤行モードは表記と読みをこの形に導出して使う(app/src/lib/gohogo.ts)。
+            # 導出した結果で、これまでと同じ観点を確かめる。
+            text, ruby = clause_text(clause), clause_ruby(clause)
             if not text:
-                problems.append(f"{where} 第{i}句: text が空です")
+                problems.append(f"{where} 第{i}句: 表記が空です")
             if not ruby:
-                problems.append(f"{where} 第{i}句: ruby が空です")
+                problems.append(f"{where} 第{i}句: 読みが空です")
             if has_kanji(ruby):
-                problems.append(f"{where} 第{i}句: ruby に漢字が残っています: {ruby}")
+                problems.append(f"{where} 第{i}句: 読みに漢字が残っています: {ruby}")
             if len(text) > MAX_CLAUSE_CHARS:
                 problems.append(
                     f"{where} 第{i}句: {len(text)}字。{MAX_CLAUSE_CHARS}字を超えています"
                 )
     return problems
+
+
+# 句(tokens)は1行にまとめて書き出す。indent付きのjson.dumpだとトークンの
+# 配列が1要素1行に展開され、ファイルが4倍近くに膨らむうえ差分も読めなくなる。
+# 構造は字下げしたまま、句だけを1行に畳む。
+_CLAUSE_PLACEHOLDER = "\u0000clause:%d\u0000"
+
+
+def dump_chapters_json(data):
+    """shared/gohogo/*.json の文字列を作る(句は1行、それ以外は字下げ)"""
+    compact = []
+
+    def stash(clause):
+        compact.append(json.dumps(clause, ensure_ascii=False, separators=(",", ":")))
+        return _CLAUSE_PLACEHOLDER % (len(compact) - 1)
+
+    shaped = {
+        **data,
+        "chapters": [
+            {
+                **chapter,
+                "paragraphs": [
+                    {"clauses": [stash(clause) for clause in para["clauses"]]}
+                    for para in chapter["paragraphs"]
+                ],
+            }
+            for chapter in data["chapters"]
+        ],
+    }
+    text = json.dumps(shaped, ensure_ascii=False, indent=2)
+    for i, clause_json in enumerate(compact):
+        # 置き換え先はJSON文字列なので、囲みの引用符ごと差し替える
+        text = text.replace(json.dumps(_CLAUSE_PLACEHOLDER % i), clause_json)
+    return text + "\n"
 
 
 def load_manifest(cache_dir):
@@ -192,10 +253,12 @@ def main():
             "henLabel": HEN_LABELS[hen],
             "chapters": out_chapters,
         }
-        total = sum(len(c["body"]) for c in out_chapters)
-        longest = max((len(cl["text"]) for c in out_chapters for cl in c["body"]),
-                      default=0)
-        log(f"{HEN_LABELS[hen]}: {len(out_chapters)}章 / 全{total}句 / 最長{longest}字")
+        total = sum(1 for c in out_chapters for _ in iter_clauses(c))
+        paragraphs = sum(len(c["paragraphs"]) for c in out_chapters)
+        longest = max((len(clause_text(cl)) for c in out_chapters
+                       for cl in iter_clauses(c)), default=0)
+        log(f"{HEN_LABELS[hen]}: {len(out_chapters)}章 / {paragraphs}段落 / "
+            f"全{total}句 / 最長{longest}字")
 
     if problems:
         log("\n--- 検証で見つかった問題 ---")
@@ -213,8 +276,7 @@ def main():
     for hen, data in outputs.items():
         path = os.path.join(args.out_dir, f"{hen}.json")
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.write("\n")
+            f.write(dump_chapters_json(data))
         log(f"書き出し: {path}")
     return 0
 
