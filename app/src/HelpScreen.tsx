@@ -65,10 +65,7 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
             + "読み物として読めます。"}
         </p>
         <ul className="settings-list">
-          <li>
-            {"前篇・後篇を切り替えて、31章の一覧から読みたい章を選べます。"
-              + "一覧には各章の一文要約が添えてあります。"}
-          </li>
+          <li>前篇・後篇を切り替えて、31章の一覧から読みたい章を選べます。</li>
           <li>
             {"その日の日付と同じ番号の章に「今日」の印が付きます(1日なら第一章)。"}
           </li>
@@ -82,10 +79,6 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
               + "タップするとその章が開きます。"}
           </li>
         </ul>
-        <p className="settings-body-text">
-          {"一文要約は本文をもとに書き起こしたもので、校正の途上にあります。"
-            + "正確な内容は本文にあたってください。"}
-        </p>
       </section>
 
       <h3 className="settings-subhead">一節から典拠をさがす</h3>

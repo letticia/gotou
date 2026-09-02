@@ -172,12 +172,11 @@ export default function GohogoMode({
               <span className="gohogo-chapter-number">
                 {chapterToKanji(chapter.chapter)}
               </span>
+              {/* 一文要約(chapter.summary)はデータには入っているが、いまは出さない。
+                  僧侶の校閲が済んでいないため(shared/gohogo/README.md)。 */}
               <span className="gohogo-chapter-title">
                 <span className="title">{chapter.title}</span>
                 <span className="reading">{chapter.titleReading}</span>
-                {chapter.summary && (
-                  <span className="gohogo-chapter-summary">{chapter.summary}</span>
-                )}
               </span>
               {chapter.chapter === today && (
                 <span className="gohogo-today-mark">今日</span>
