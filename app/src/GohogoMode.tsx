@@ -175,6 +175,9 @@ export default function GohogoMode({
               <span className="gohogo-chapter-title">
                 <span className="title">{chapter.title}</span>
                 <span className="reading">{chapter.titleReading}</span>
+                {chapter.summary && (
+                  <span className="gohogo-chapter-summary">{chapter.summary}</span>
+                )}
               </span>
               {chapter.chapter === today && (
                 <span className="gohogo-today-mark">今日</span>

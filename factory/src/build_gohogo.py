@@ -10,7 +10,9 @@ factory/cache/gohogo/ の章ページHTMLを読み、shared/gohogo/{zenpen,kohen
   - 現代語訳。gohogo_parse.py が本文(div.genbun)しか見ないので構造上入らない。
   - サイト掲載の一文要約。parse_chapter は site_summary として返すが、
     ここでは書き出すフィールドを明示的に列挙しているので shared/ には出ない。
-    (summary フィールド自体、いまは持たせていない。shared/gohogo/README.md 参照)
+    shared/ に入る summary は gohogo_summaries.py の自前のもの。
+    サイト掲載の要約が出るのは factory/output/ の校閲用対照表だけ
+    (output/ はコミット対象外)。
 
 ■ 使い方
 
@@ -23,6 +25,13 @@ import json
 import os
 import sys
 
+from gohogo_summaries import (
+    MAX_SUMMARY_CHARS,
+    MIN_SUMMARY_CHARS,
+    SIMILARITY_LIMIT,
+    get_summary,
+    similarity_report,
+)
 from gohogo_parse import (
     HEN_LABELS,
     MAX_CLAUSE_CHARS,
@@ -36,6 +45,9 @@ FACTORY_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO_DIR = os.path.dirname(FACTORY_DIR)
 CACHE_DIR = os.path.join(FACTORY_DIR, "cache", "gohogo")
 OUT_DIR = os.path.join(REPO_DIR, "shared", "gohogo")
+# 校閲用の対照表。サイト掲載の要約を載せるため、必ず output/(コミット対象外)へ書く
+REVIEW_DIR = os.path.join(FACTORY_DIR, "output")
+REVIEW_PATH = os.path.join(REVIEW_DIR, "gohogo-summary-review.md")
 
 INDEX_URL = "https://www.chion-in.or.jp/okotoba/"
 CHAPTERS_PER_HEN = 31
@@ -88,6 +100,8 @@ def to_output_chapter(chapter, fetched_ym):
         "chapter": chapter["chapter"],
         "title": chapter["title"],
         "titleReading": chapter["titleReading"],
+        # 章題でも照合する(章の取り違えを黙って通さない)
+        "summary": get_summary(chapter["hen"], chapter["chapter"], chapter["title"]) or "",
         "paragraphs": [
             {"clauses": [{"tokens": clause["tokens"]} for clause in para["clauses"]]}
             for para in chapter["paragraphs"]
@@ -132,6 +146,20 @@ def validate_hen(hen, chapters, require_full=True):
             problems.append(f"{where}: source.url が空です")
         if has_kanji(ch.get("titleReading", "")):
             problems.append(f"{where}: titleReading に漢字が残っています")
+        summary = ch.get("summary") or ""
+        if not summary:
+            # 下見(--allow-partial)では要約が無くても通す。62章そろえて
+            # 本番の書き出しをするときだけ必須にする。
+            if require_full:
+                problems.append(
+                    f"{where}: summary がありません"
+                    "(gohogo_summaries.pyに追加する。章題の照合にも注意)"
+                )
+        elif not MIN_SUMMARY_CHARS <= len(summary) <= MAX_SUMMARY_CHARS:
+            problems.append(
+                f"{where}: summaryが{len(summary)}字。"
+                f"{MIN_SUMMARY_CHARS}〜{MAX_SUMMARY_CHARS}字に収める"
+            )
         clauses = list(iter_clauses(ch))
         if not clauses:
             problems.append(f"{where}: 本文が空です")
@@ -194,6 +222,63 @@ def dump_chapters_json(data):
     return text + "\n"
 
 
+def check_summaries(parsed_chapters):
+    """自前の要約がサイト掲載の要約に近すぎないか確かめる。
+
+    同じ本文の要旨である以上ある程度は似るが、閾値を超えたものは
+    「書き直しが要る」として報告し、書き出しを止める。
+    """
+    problems = []
+    for chapter in parsed_chapters:
+        summary = get_summary(chapter["hen"], chapter["chapter"], chapter["title"])
+        if not summary:
+            continue
+        too_close, score, parts = similarity_report(summary, chapter.get("site_summary", ""))
+        if too_close:
+            problems.append(
+                f"{HEN_LABELS[chapter['hen']]}第{chapter['chapter']}章: "
+                f"サイト掲載の要約に近すぎます(類似度{score:.2f} "
+                f"/ 2文字組{parts['dice']:.2f} 並び{parts['ratio']:.2f}。"
+                f"上限{SIMILARITY_LIMIT})。書き直してください"
+            )
+    return problems
+
+
+def write_summary_review(parsed_chapters, path):
+    """校閲用の対照表。**サイト掲載の要約を載せるので output/ にしか書かない。**
+    人が読んで、要約が本文に忠実か・サイト文の言い換えになっていないかを見る。"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    lines = [
+        "# 御法語 一文要約 校閲用対照表",
+        "",
+        "`factory/src/gohogo_summaries.py` の自前要約と、知恩院サイト掲載の要約を並べたもの。",
+        "",
+        "- **このファイルはコミットしない**(`factory/output/` は .gitignore 済み)。",
+        "  サイト掲載の要約を載せているため。",
+        "- 自前要約は本文と章題から書き起こしたもので、仏教・宗門の理解を要する。",
+        "  **開発者(僧侶)の校閲を前提とする。**",
+        "- 「類似度」はサイト掲載の要約との近さ(0〜1)。"
+        f"{SIMILARITY_LIMIT}以上は書き出し前に問題として弾かれる。",
+        "",
+    ]
+    for hen in ("zenpen", "kohen"):
+        lines += [f"## {HEN_LABELS[hen]}", "",
+                  "| 章 | 章題 | 自前の要約 | 類似度 | サイト掲載の要約 |",
+                  "| --- | --- | --- | --- | --- |"]
+        for chapter in sorted((c for c in parsed_chapters if c["hen"] == hen),
+                              key=lambda c: c["chapter"]):
+            summary = get_summary(hen, chapter["chapter"], chapter["title"]) or "(未作成)"
+            _, score, _ = similarity_report(summary, chapter.get("site_summary", ""))
+            site = (chapter.get("site_summary") or "").replace("|", "｜")
+            lines.append(
+                f"| {chapter['chapter']} | {chapter['title']} | "
+                f"{summary.replace('|', '｜')} | {score:.2f} | {site} |"
+            )
+        lines.append("")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+
 def load_manifest(cache_dir):
     path = os.path.join(cache_dir, "fetch-manifest.json")
     if not os.path.exists(path):
@@ -213,6 +298,8 @@ def main():
     ap.add_argument("--check", action="store_true", help="検証だけ行い、書き出さない")
     ap.add_argument("--allow-partial", action="store_true",
                     help="62章そろっていなくても続ける(下見用)")
+    ap.add_argument("--review-path", default=REVIEW_PATH,
+                    help="校閲用対照表の書き出し先(サイト掲載の要約を含むためoutput/配下)")
     args = ap.parse_args()
 
     manifest = load_manifest(args.cache_dir)
@@ -241,7 +328,8 @@ def main():
         by_hen[chapter["hen"]].append(chapter)
 
     require_full = not args.allow_partial
-    problems = []
+    all_parsed = [c for chapters in by_hen.values() for c in chapters]
+    problems = check_summaries(all_parsed)
     outputs = {}
     for hen in ("zenpen", "kohen"):
         chapters = sorted(by_hen[hen], key=lambda c: c["chapter"])
@@ -268,8 +356,13 @@ def main():
         return 1
 
     log("\n検証: 問題なし")
+
+    # 校閲用の対照表は --check でも書く(要約を直す作業のための資料なので)
+    write_summary_review(all_parsed, args.review_path)
+    log(f"校閲用の対照表: {args.review_path}(コミット対象外)")
+
     if args.check:
-        log("--check のため書き出しません。")
+        log("--check のため shared/ へは書き出しません。")
         return 0
 
     os.makedirs(args.out_dir, exist_ok=True)

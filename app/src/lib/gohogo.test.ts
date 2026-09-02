@@ -143,6 +143,15 @@ describe("listChapters", () => {
       expect(chapter.titleReading).not.toMatch(/[一-鿿]/);
     }
   });
+
+  it("gives every chapter a one-sentence summary", () => {
+    for (const hen of ["zenpen", "kohen"] as const) {
+      for (const chapter of listChapters(hen)) {
+        expect(chapter.summary.length, `${hen} ${chapter.chapter}`).toBeGreaterThan(0);
+        expect(chapter.summary.endsWith("。")).toBe(true);
+      }
+    }
+  });
 });
 
 describe("getDailyGohogo", () => {

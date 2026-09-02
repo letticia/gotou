@@ -7,6 +7,7 @@
       "chapter": 1,
       "title": "難易二道",
       "titleReading": "なんいにどう",
+      "summary": "聖道は徒歩の険路、浄土は船路にたとえられる。本願の船に乗って極楽の岸に着け。",
       "paragraphs": [
         {
           "clauses": [
@@ -67,6 +68,7 @@
       "chapter": 2,
       "title": "他力往生",
       "titleReading": "たりきおうじょう",
+      "summary": "重い石も船に載せれば沈まぬように、罪業重くとも本願の船に乗れば必ず往生する。",
       "paragraphs": [
         {
           "clauses": [
@@ -125,6 +127,7 @@
       "chapter": 3,
       "title": "機教相応",
       "titleReading": "ききょうそうおう",
+      "summary": "宣旨を取り違えぬように、時と機に相応する教えを選ぶ。末法の機には浄土門が適う。",
       "paragraphs": [
         {
           "clauses": [
@@ -191,6 +194,7 @@
       "chapter": 4,
       "title": "特留此経",
       "titleReading": "どくるしきょう",
+      "summary": "法滅百年の後の衆生さえ一念で救われる。まして今の我らは三心を具して名号を称えよ。",
       "paragraphs": [
         {
           "clauses": [
@@ -251,6 +255,7 @@
       "chapter": 5,
       "title": "無上功徳",
       "titleReading": "むじょうくどく",
+      "summary": "善根が無いからこそ念仏する。一声にも無上の功徳があり、往生を疑う理由にはならない。",
       "paragraphs": [
         {
           "clauses": [
@@ -281,6 +286,7 @@
       "chapter": 6,
       "title": "念仏付属",
       "titleReading": "ねんぶつふぞく",
+      "summary": "釈尊は定散の諸行ではなく念仏の一行を阿難に付属された。その付属の念仏を修せよ。",
       "paragraphs": [
         {
           "clauses": [
@@ -342,6 +348,7 @@
       "chapter": 7,
       "title": "助正分別",
       "titleReading": "じょしょうふんべつ",
+      "summary": "往生の行は正行と雑行に分かれ、正行のうち称名が正定業、ほかは助業である。",
       "paragraphs": [
         {
           "clauses": [
@@ -407,6 +414,7 @@
       "chapter": 8,
       "title": "安心起行",
       "titleReading": "あんじんきぎょう",
+      "summary": "願だけでも行だけでも至らない。心と行がともに相扶けてはじめて往生は成る。",
       "paragraphs": [
         {
           "clauses": [
@@ -441,6 +449,7 @@
       "chapter": 9,
       "title": "至誠心",
       "titleReading": "しじょうしん",
+      "summary": "至誠心とは虚仮を離れた真実心。生死を厭い念仏の一行を励むことがその真実である。",
       "paragraphs": [
         {
           "clauses": [
@@ -520,6 +529,7 @@
       "chapter": 10,
       "title": "深心",
       "titleReading": "じんしん",
+      "summary": "まず我が身のほどを信じ、次に仏の願を信ずる。この二つで凡夫の疑いは晴れる。",
       "paragraphs": [
         {
           "clauses": [
@@ -565,6 +575,7 @@
       "chapter": 11,
       "title": "廻向発願心",
       "titleReading": "えこうほつがんじん",
+      "summary": "修めた一切の善根を真実の心で極楽に廻らし、往生を願い求める心である。",
       "paragraphs": [
         {
           "clauses": [
@@ -587,6 +598,7 @@
       "chapter": 12,
       "title": "二河白道",
       "titleReading": "にがびゃくどう",
+      "summary": "信の手をもって疑いと誹りを汲み分ければ、六方の諸仏が来って力を貸してくださる。",
       "paragraphs": [
         {
           "clauses": [
@@ -629,6 +641,7 @@
       "chapter": 13,
       "title": "無比法楽",
       "titleReading": "むびほうらく",
+      "summary": "弥陀はすでに十劫の昔に仏となられた。誓願は虚しくなく、称える者は一人も漏れない。",
       "paragraphs": [
         {
           "clauses": [
@@ -678,6 +691,7 @@
       "chapter": 14,
       "title": "四修",
       "titleReading": "ししゅ",
+      "summary": "長時・恭敬・無間・無余の四修をもって、命終わるまで念仏を絶やさず修める。",
       "paragraphs": [
         {
           "clauses": [
@@ -733,6 +747,7 @@
       "chapter": 15,
       "title": "日課",
       "titleReading": "にっか",
+      "summary": "数そのものが要ではないが、数を定めぬは懈怠のもと。日課を決めて名号を相続せよ。",
       "paragraphs": [
         {
           "clauses": [
@@ -765,6 +780,7 @@
       "chapter": 16,
       "title": "念珠",
       "titleReading": "ねんじゅ",
+      "summary": "念珠は舌と手を導く拍子である。妄念は許されても、雑言しながら繰るのは僻事である。",
       "paragraphs": [
         {
           "clauses": [
@@ -811,6 +827,7 @@
       "chapter": 17,
       "title": "百万遍",
       "titleReading": "ひゃくまんべん",
+      "summary": "百万遍は七日の念仏の数にあたる。称えられずとも一念十念で生まれることに変わりはない。",
       "paragraphs": [
         {
           "clauses": [
@@ -857,6 +874,7 @@
       "chapter": 18,
       "title": "深信因果",
       "titleReading": "じんしんいんが",
+      "summary": "戒を保ちきれぬ身であっても、分に随って悪を止め、縁に触れて念仏し往生を期せ。",
       "paragraphs": [
         {
           "clauses": [
@@ -909,6 +927,7 @@
       "chapter": 19,
       "title": "孝養父母",
       "titleReading": "きょうようぶも",
+      "summary": "父母を重んじる心があるなら、まず阿弥陀仏に預け、我が念仏の功徳を廻らせ。",
       "paragraphs": [
         {
           "clauses": [
@@ -934,6 +953,7 @@
       "chapter": 20,
       "title": "行者存念",
       "titleReading": "ぎょうじゃぞんねん",
+      "summary": "いま浄土を欣うのは宿善のしからしむるところと悦び、無常と本願を折ごとに思い起こせ。",
       "paragraphs": [
         {
           "clauses": [
@@ -995,6 +1015,7 @@
       "chapter": 21,
       "title": "随順仏教",
       "titleReading": "ずいじゅんぶっきょう",
+      "summary": "往生に不足なしと言って悪を憚らぬのは仏教の掟に背く。善人となって念仏せよ。",
       "paragraphs": [
         {
           "clauses": [
@@ -1034,6 +1055,7 @@
       "chapter": 22,
       "title": "退縁悪知識",
       "titleReading": "たいえんあくちしき",
+      "summary": "往生できぬと説く人の言に驚くな。凡夫の計らいを聞かず、ひとすじに仏の誓いを頼め。",
       "paragraphs": [
         {
           "clauses": [
@@ -1067,6 +1089,7 @@
       "chapter": 23,
       "title": "慈悲加祐",
       "titleReading": "じひかゆう",
+      "summary": "臨終正念を祈るのは順序が逆である。常日頃の念仏によって仏が来迎し、正念に住させられる。",
       "paragraphs": [
         {
           "clauses": [
@@ -1116,6 +1139,7 @@
       "chapter": 24,
       "title": "滅罪増上縁",
       "titleReading": "めつざいぞうじょうえん",
+      "summary": "五逆の罪人でさえ臨終の十声で往生する。本願でなければありえないことである。",
       "paragraphs": [
         {
           "clauses": [
@@ -1146,6 +1170,7 @@
       "chapter": 25,
       "title": "護念増上縁",
       "titleReading": "ごねんぞうじょうえん",
+      "summary": "摂取の光は臨終ではなく平生から照らし始め、最後まで捨てられることがない。",
       "paragraphs": [
         {
           "clauses": [
@@ -1183,6 +1208,7 @@
       "chapter": 26,
       "title": "仏神擁護",
       "titleReading": "ぶっしんおうご",
+      "summary": "念仏する人は諸仏・菩薩・神々に囲まれて護られる。悪魔を払うための祈りは要らない。",
       "paragraphs": [
         {
           "clauses": [
@@ -1230,6 +1256,7 @@
       "chapter": 27,
       "title": "転重軽受",
       "titleReading": "てんじゅうきょうじゅ",
+      "summary": "宿業の病は祈りでは変わらぬが、念仏の力は重く受けるべき報いを軽くする。",
       "paragraphs": [
         {
           "clauses": [
@@ -1286,6 +1313,7 @@
       "chapter": 28,
       "title": "順逆二縁",
       "titleReading": "じゅんぎゃくにえん",
+      "summary": "誹り謗る者すら縁を結んで浄土の友となる。機も行も選ばぬこの願を頼み励め。",
       "paragraphs": [
         {
           "clauses": [
@@ -1328,6 +1356,7 @@
       "chapter": 29,
       "title": "一蓮托生",
       "titleReading": "いちれんたくしょう",
+      "summary": "別れは春の夜の夢のごとし。同じ名号を称える者は、住む所を隔てても親しい。",
       "paragraphs": [
         {
           "clauses": [
@@ -1370,6 +1399,7 @@
       "chapter": 30,
       "title": "廻向",
       "titleReading": "えこう",
+      "summary": "亡き人のために念仏を廻向すれば、その光が三悪道を照らし、苦を休め解脱させる。",
       "paragraphs": [
         {
           "clauses": [
@@ -1401,6 +1431,7 @@
       "chapter": 31,
       "title": "還来度生",
       "titleReading": "げんらいどしょう",
+      "summary": "不信の者に心を動かされず、疾く極楽に参り、還って誹謗の者まで渡そうと願え。",
       "paragraphs": [
         {
           "clauses": [

@@ -33,6 +33,9 @@ export interface GohogoChapter {
   chapter: number;
   title: string;
   titleReading: string;
+  /** 本文に基づく自前生成の一文要約(サイト掲載文の転載ではない)。
+   *  勤行画面には出さない。読み物の章一覧で章を選ぶ手がかりに使う。 */
+  summary: string;
   paragraphs: GohogoParagraph[];
   source: { name: string; url: string; license: string };
 }

@@ -31,6 +31,7 @@ def sample_chapter(**overrides):
         "chapter": 1,
         "title": "試験章題",
         "titleReading": "しけんしょうだい",
+        "summary": "これは検証用のダミーの要約であって、実際の章の要約ではない。",
         "paragraphs": paragraphs_of([["ただ"], ["念仏", "ねんぶつ"], ["すべし。"]]),
         "source": {"name": "ダミー", "url": "https://example.invalid/f01/", "license": "PD"},
     }
@@ -75,7 +76,8 @@ class TestToOutputChapter:
         parsed["url"] = "https://example.invalid/f01/"
         assert parsed["site_summary"]
         out = to_output_chapter(parsed, "2026-09")
-        assert set(out) == {"chapter", "title", "titleReading", "paragraphs", "source"}
+        assert set(out) == {"chapter", "title", "titleReading", "summary",
+                            "paragraphs", "source"}
         assert parsed["site_summary"] not in json.dumps(out, ensure_ascii=False)
 
     def test_body_keeps_only_the_tokens(self):
@@ -148,6 +150,23 @@ class TestValidateHen:
         problems = validate_hen("zenpen", [bad], require_full=False)
         assert any("字を超えています" in p for p in problems)
 
+    def test_reports_a_missing_summary_on_a_full_build(self):
+        chapters = [sample_chapter(chapter=n) for n in range(1, 32)]
+        chapters[0]["summary"] = ""
+        problems = validate_hen("zenpen", chapters)
+        assert any("summary がありません" in p for p in problems)
+
+    def test_allows_a_missing_summary_while_previewing(self):
+        # --allow-partial は下見用。要約がそろっていなくても止めない
+        problems = validate_hen("zenpen", [sample_chapter(summary="")],
+                                require_full=False)
+        assert not any("summary がありません" in p for p in problems)
+
+    def test_reports_a_summary_of_the_wrong_length(self):
+        problems = validate_hen("zenpen", [sample_chapter(summary="短い。")],
+                                require_full=False)
+        assert any("summaryが" in p for p in problems)
+
     def test_reports_a_missing_source_url(self):
         bad = sample_chapter(source={"name": "x", "url": "", "license": "PD"})
         problems = validate_hen("zenpen", [bad], require_full=False)
@@ -178,11 +197,15 @@ class TestEndToEnd:
         monkeypatch.setattr("sys.argv", [
             "build_gohogo.py", "--cache-dir", str(cache), "--out-dir", str(out),
             "--allow-partial",
+            # 実output/を汚さない(対照表はサイト掲載の要約を含む)
+            "--review-path", str(tmp_path / "review.md"),
         ])
         assert main() == 0
 
         data = json.loads((out / "zenpen.json").read_text(encoding="utf-8"))
         assert data["version"] == 1
+        # ダミー章の章題は実際の章と違うので、番号が同じでも要約は付かない
+        assert data["chapters"][0]["summary"] == ""
         assert data["hen"] == "zenpen" and data["henLabel"] == "前篇"
         assert [c["chapter"] for c in data["chapters"]] == [1, 2]
         assert data["chapters"][0]["title"] == "試験章題"
@@ -207,6 +230,7 @@ class TestEndToEnd:
             ensure_ascii=False), encoding="utf-8")
         out = tmp_path / "out"
         monkeypatch.setattr("sys.argv", [
-            "build_gohogo.py", "--cache-dir", str(cache), "--out-dir", str(out)])
+            "build_gohogo.py", "--cache-dir", str(cache), "--out-dir", str(out),
+            "--review-path", str(tmp_path / "review.md")])
         assert main() == 1
         assert not out.exists()

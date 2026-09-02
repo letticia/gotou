@@ -585,6 +585,19 @@ body {
   text-overflow: ellipsis;
 }
 
+/* 章の一文要約。どの章か見当をつけるための手がかりなので、2行で打ち切る */
+.gohogo-chapter-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 0.2em;
+  font-family: var(--font-content);
+  font-size: 0.78em;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
 /* その日の章の印。日付と同じ番号の章がその日の御法語 */
 .gohogo-today-mark {
   flex-shrink: 0;
