@@ -127,3 +127,34 @@ class TestClauseSplitting:
             "html.parser",
         )
         assert tokenize_ruby(soup.find("p")) == [("本願", "ほんがん"), ("を頼め。", None)]
+
+
+class TestFixups:
+    """知恩院のページに読みが無い箇所を補う表(gohogo_fixups.py)。
+    当て推量を入れないため、表に無い漢字は読みに残り、検証で捕まる。"""
+
+    def test_missing_ruby_entries_carry_a_reason(self):
+        from gohogo_fixups import MISSING_RUBY
+        for word, (reading, reason) in MISSING_RUBY.items():
+            assert reading and reason, f"{word} に読みまたは根拠がありません"
+            assert not any("㐀" <= ch <= "鿿" for ch in reading), (
+                f"{word} の読みに漢字が混ざっています"
+            )
+
+    def test_supplies_a_reading_the_page_forgot(self):
+        from gohogo_fixups import apply_missing_ruby
+        assert apply_missing_ruby("、釈迦にも") == "、しゃかにも"
+
+    def test_leaves_unknown_kanji_alone_so_validation_catches_them(self):
+        from gohogo_fixups import apply_missing_ruby
+        assert apply_missing_ruby("、未知語にも") == "、未知語にも"
+
+    def test_drops_the_bibliographic_note(self):
+        from gohogo_fixups import strip_dropped_notes
+        assert strip_dropped_notes("尠し。〈已上略抄〉") == "尠し。"
+
+    def test_keeps_a_note_that_belongs_to_the_text(self):
+        # 後篇第10章の〈十声一声までに往生す〉は本文の一部(ルビも付いている)
+        from gohogo_fixups import strip_dropped_notes
+        text = "〈十声一声までに往生す〉というは、"
+        assert strip_dropped_notes(text) == text

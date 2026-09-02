@@ -39,6 +39,8 @@ import re
 
 from bs4 import BeautifulSoup
 
+from gohogo_fixups import apply_missing_ruby, strip_dropped_notes
+
 HEN_BY_LABEL = {"前篇": "zenpen", "後篇": "kohen", "前編": "zenpen", "後編": "kohen"}
 HEN_LABELS = {"zenpen": "前篇", "kohen": "後篇"}
 
@@ -117,10 +119,13 @@ def tokenize_ruby(element):
                 walk(child)
 
     walk(element)
-    # 改行由来の空白を潰す(本文中の全角スペースは意味があるので触らない)
+    # 改行由来の空白を潰す(本文中の全角スペースは意味があるので触らない)。
+    # あわせて、読誦の対象でない書誌の注記をここで落とす(gohogo_fixups.py)。
     cleaned = []
     for text, reading in tokens:
         text = re.sub(r"[ \t\r\n]+", "", text)
+        if reading is None:
+            text = strip_dropped_notes(text)
         if text:
             cleaned.append((text, reading))
     return cleaned
@@ -160,7 +165,10 @@ def build_clauses(tokens, max_chars=MAX_CLAUSE_CHARS):
         if not current:
             return
         text = "".join(t for t, _ in current)
-        ruby = "".join(r if r is not None else t for t, r in current)
+        # 地の文はそのまま読みになるが、ルビ付け漏れの語だけは表で補う
+        # (根拠は gohogo_fixups.MISSING_RUBY に記録。補えない漢字は検証で捕まる)
+        ruby = "".join(r if r is not None else apply_missing_ruby(t)
+                       for t, r in current)
         clauses.append({"text": text, "ruby": ruby})
         current.clear()
 
