@@ -12,6 +12,8 @@ import type { FontChoice } from "./lib/fontChoice";
 import { fontStackFor, loadFontChoice, saveFontChoice } from "./lib/fontChoice";
 import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
 import { loadCounterMode, saveCounterMode } from "./lib/gongyoCounterMode";
+import type { GohogoHen } from "./lib/gohogoHen";
+import { loadGohogoHen, saveGohogoHen } from "./lib/gohogoHen";
 
 type Mode = "search" | "gongyo";
 
@@ -27,6 +29,8 @@ export default function App() {
   // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
   // 設定画面へ値を渡し・変更を保存する橋渡し役のみ(GongyoModeへは渡さない)
   const [counterMode, setCounterMode] = useState<GongyoCounterMode>(() => loadCounterMode());
+  // 篇の選択も同様。GongyoModeは再マウント時にloadGohogoHen()を直接読む
+  const [gohogoHen, setGohogoHen] = useState<GohogoHen>(() => loadGohogoHen());
   // 勤行の読誦中は画面全体を経本にする(タブバー・ナビバーを隠す)。
   // 「画面下半分どこでもタップでページ送り」(CLAUDE.md)とボトムタブバーは
   // 操作が衝突するため、読誦中だけは必ず隠す。GongyoModeが状態を教えてくれる。
@@ -60,6 +64,11 @@ export default function App() {
   function handleCounterModeChange(next: GongyoCounterMode) {
     setCounterMode(next);
     saveCounterMode(next);
+  }
+
+  function handleGohogoHenChange(next: GohogoHen) {
+    setGohogoHen(next);
+    saveGohogoHen(next);
   }
 
   const immersive = mode === "gongyo" && gongyoImmersive && !showSettings;
@@ -98,6 +107,8 @@ export default function App() {
             onFontChange={handleFontChange}
             counterMode={counterMode}
             onCounterModeChange={handleCounterModeChange}
+            gohogoHen={gohogoHen}
+            onGohogoHenChange={handleGohogoHenChange}
             onClose={() => setShowSettings(false)}
             onOpenHelp={() => setShowHelp(true)}
             onOpenAbout={() => setShowAbout(true)}

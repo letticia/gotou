@@ -1182,6 +1182,17 @@ body {
   background: var(--accent);
 }
 
+/* 扉に出す当日の御法語。始める前にどの章を読むことになるかが分かるようにする。
+   差定名(縦書きの大きな表示)の下に、控えめな一行として添える。 */
+.gongyo-intro-gohogo {
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-4);
+  font-family: var(--font-content);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 /* 扉の「続きから」。おつとめを中断していたときだけ出る。
    扉は全面が「はじめから始める」タップ領域なので、そちらを選びにくく
    しないよう控えめな体裁にし、何を選んでいるのかを一行で添える。 */
@@ -1447,7 +1458,11 @@ body {
 }
 
 .gongyo-preset-name {
-  /* 差定名は文脈の補助。偈文名(--accent)より一段沈める */
+  /* 差定名は文脈の補助。偈文名(--accent)より一段沈める。
+     幅が足りないときは差定名から先に詰める(読誦中に知りたいのは
+     いまどの偈文かであって、どのおつとめかは分かっている)。 */
+  flex: 1 1 0;
+  min-width: 0;
   font-family: var(--font-content);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1460,7 +1475,16 @@ body {
   padding-bottom: var(--space-6);
 }
 
+/* 偈文名は必ず1行に収める。2行になるとそのぶん本文に使える高さが減り、
+   縦書きの字送りを決める --gongyo-chrome の見積りが足りなくなって、
+   ルビ付きの句(折り返せない)が画面の下端をはみ出す。
+   長い名前は末尾を省略する(全文は式次第の一覧で読める)。 */
 .gongyo-unit-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-family: var(--font-content);
   font-size: 1.15rem;
   font-weight: bold;

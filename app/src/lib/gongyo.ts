@@ -281,8 +281,14 @@ function effectiveLineLength(line: GongyoPageLine): number {
   return Math.max(line.text.length, (line.ruby?.length ?? 0) * RUBY_TO_TEXT_RATIO);
 }
 
-/** その行が折り返しで占める列数 */
+/** その行が折り返しで占める列数。
+ * ルビ付きの行は index.css の .gongyo-line-has-ruby で1列に固定されている
+ * (本文とルビが別々に折り返すと対応が崩れるため)。折り返さない以上、
+ * どれだけ長くても占める列は1つで、必要な字数はまるごと1列に載る。
+ * ここを折り返す前提で数えると、字送りが実際より大きく見積もられ、
+ * 長いルビ付きの行が画面の下端をはみ出す。 */
 function columnsForLine(line: GongyoPageLine): number {
+  if (line.ruby) return 1;
   return Math.max(1, Math.ceil(effectiveLineLength(line) / VERTICAL_CHARS_PER_COLUMN));
 }
 

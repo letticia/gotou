@@ -18,6 +18,14 @@ import {
   loadProgress,
   saveProgress,
 } from "./lib/gongyoProgress";
+import {
+  formatGohogoIntroLabel,
+  getGohogoChapter,
+  chapterNumberForDate,
+  presetUsesDailyGohogo,
+  withDailyGohogo,
+} from "./lib/gohogo";
+import { loadGohogoHen } from "./lib/gohogoHen";
 import { loadCounterMode } from "./lib/gongyoCounterMode";
 import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
@@ -100,6 +108,12 @@ export default function GongyoMode({
   // (Appは設定画面表示中GongyoModeをアンマウントするため、再マウント時にここで
   // 読み直すだけで最新の設定が反映される。orientationのようなヘッダートグルは無い)
   const [counterMode] = useState(() => loadCounterMode());
+  // 日替わり御法語で読む篇。counterModeと同じく、再マウント時に読み直す
+  const [gohogoHen] = useState(() => loadGohogoHen());
+  // その日の章を1回だけ決め、勤行の間は動かさない。日付をまたいでもおつとめの
+  // 途中で章が入れ替わらないようにするため(docs/saijo-spec.md)。
+  // 勤行モードを離れると再マウントされ、そのとき改めて当日の章になる。
+  const [sessionDate] = useState(() => new Date());
 
   // 共有URLを開いた直後に取り込み確認画面へ遷移する
   useEffect(() => {
@@ -128,10 +142,16 @@ export default function GongyoMode({
   }, [userPresets]);
 
   const preset = userPresetsById.get(presetId) ?? builtinPresetsById.get(presetId) ?? null;
+  // 差定を組む前に gohogo-daily を当日の章へ解決する。buildPagesには手を入れない
+  // (unitsById.get(item.unit)で引かれる表に入れておけば足りる)。
+  const resolvedUnits = useMemo(
+    () => withDailyGohogo(unitsById, sessionDate, gohogoHen),
+    [unitsById, sessionDate, gohogoHen],
+  );
   // 縦書きと横書きでは1タップで進む行数が異なるため、向きが変わるとページ構成も変わる
   const pages = useMemo(
-    () => (preset ? buildPages(preset, unitsById, orientation, counterMode) : []),
-    [preset, unitsById, orientation, counterMode],
+    () => (preset ? buildPages(preset, resolvedUnits, orientation, counterMode) : []),
+    [preset, resolvedUnits, orientation, counterMode],
   );
 
   const outline = useMemo(() => buildOutline(pages), [pages]);
@@ -251,11 +271,11 @@ export default function GongyoMode({
   }
 
   if (view.name === "import") {
-    const importPages = buildPages(view.preset, unitsById);
+    const importPages = buildPages(view.preset, resolvedUnits);
     const includedUnitTitles = Array.from(
       new Set(
         view.preset.items
-          .map((item) => unitsById.get(item.unit)?.title)
+          .map((item) => resolvedUnits.get(item.unit)?.title)
           .filter((title): title is string => Boolean(title)),
       ),
     );
@@ -291,7 +311,7 @@ export default function GongyoMode({
     return (
       <PresetEditor
         preset={view.preset}
-        unitsById={unitsById}
+        unitsById={resolvedUnits}
         onSave={handleSaveEditor}
         onCancel={() => setView({ name: "picker" })}
       />
@@ -347,6 +367,15 @@ export default function GongyoMode({
     setIntroShown(true);
   }
 
+  // 扉に当日の御法語を示す。日替わり御法語を含む差定のときだけ出す
+  // (どの章を読むことになるかを、始める前に分かるようにする)
+  const gohogoChapter = presetUsesDailyGohogo(preset)
+    ? getGohogoChapter(gohogoHen, chapterNumberForDate(sessionDate))
+    : null;
+  const gohogoIntroLabel = gohogoChapter
+    ? formatGohogoIntroLabel(gohogoHen, gohogoChapter)
+    : null;
+
   // 「続きから」は、同じ差定の・半日以内の・先頭ではない中断位置があるときだけ出す
   const canResume = isResumable(savedProgress, presetId, Date.now());
   const resumeTitle = canResume
@@ -385,6 +414,9 @@ export default function GongyoMode({
             </div>
           </div>
         </div>
+        {gohogoIntroLabel && (
+          <p className="gongyo-intro-gohogo">{gohogoIntroLabel}</p>
+        )}
         {canResume && resumeTitle && (
           <div className="gongyo-resume">
             <button type="button" onClick={handleResume}>

@@ -47,6 +47,10 @@ const dirCopies = [
     join(REPO_DIR, "shared", "gongyo", "presets"),
     join(APP_DIR, "src", "shared", "gongyo", "presets"),
   ],
+  [
+    join(REPO_DIR, "shared", "gohogo"),
+    join(APP_DIR, "src", "shared", "gohogo"),
+  ],
 ];
 
 for (const [src, dest] of dirCopies) {

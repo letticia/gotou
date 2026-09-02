@@ -136,6 +136,31 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
         </ul>
       </section>
 
+      <h3 className="settings-subhead">日替わり御法語</h3>
+      <section className="settings-group settings-textblock">
+        <p className="settings-body-text">
+          {"差定を選ぶ画面の「日常勤行式（四奉請・日替わり御法語版）」または"
+            + "「（三奉請・日替わり御法語版）」を選ぶと、一枚起請文のところが"
+            + "その日の御法語に替わります。"}
+        </p>
+        <ul className="settings-list">
+          <li>
+            {"その日の日付と同じ番号の章を読みます(1日なら第一章、30日なら第三十章)。"
+              + "知恩院の「今日のお言葉」と同じ数え方です。"}
+          </li>
+          <li>
+            {"章は31までなので、第29〜31章はその日がある月にだけ登場します"
+              + "(2月は第29章まで、小の月は第30章まで)。"}
+          </li>
+          <li>扉の画面に「本日の御法語: 前篇第三章 聖浄二門」と出ます。</li>
+          <li>前篇・後篇のどちらを読むかは設定で選べます(既定は前篇)。</li>
+          <li>
+            {"章はおつとめを始めるときに決まり、読んでいる途中で入れ替わることは"
+              + "ありません。日付をまたいで「続きから」で再開したときは、その日の章になります。"}
+          </li>
+        </ul>
+      </section>
+
       <h3 className="settings-subhead">差定を自分用に整える</h3>
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
