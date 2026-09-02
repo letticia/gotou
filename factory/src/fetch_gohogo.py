@@ -293,7 +293,9 @@ def main():
     unique = {}
     for ch in chapters:
         unique.setdefault((ch["hen"], ch["chapter"]), ch)
-    chapters = [unique[k] for k in sorted(unique)]
+    # 前篇1章から順に取得する(辞書順だとkohenが先に来てしまう)
+    hen_order = {"zenpen": 0, "kohen": 1}
+    chapters = sorted(unique.values(), key=lambda c: (hen_order[c["hen"]], c["chapter"]))
 
     log(f"章ページと判定できたリンク: {len(chapters)} 件")
     for hen in ("zenpen", "kohen"):
