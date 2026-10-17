@@ -70,11 +70,12 @@ export default function PresetPicker({
 
   const groups = groupBuiltinPresets(builtinPresets, import.meta.env.DEV);
 
-  function renderBuiltinSection(title: string, presets: GongyoPreset[]) {
+  function renderBuiltinSection(title: string, note: string, presets: GongyoPreset[]) {
     if (presets.length === 0) return null;
     return (
       <section className="preset-section">
         <h3>{title}</h3>
+        <p className="preset-section-note">{note}</p>
         <ul className="preset-list">
           {presets.map((preset) =>
             renderPresetItem(
@@ -102,10 +103,13 @@ export default function PresetPicker({
         </button>
         <h2>差定を選ぶ</h2>
       </div>
+      {/* 差定は僧侶の言葉なので、言葉は残しつつ何を選ぶ画面かを一行で添える */}
+      <p className="preset-picker-lead">おつとめの順序(差定)を選びます。</p>
 
       {userPresets.length > 0 && (
         <section className="preset-section">
           <h3>マイ差定</h3>
+          <p className="preset-section-note">自分で整えた差定です。</p>
           <ul className="preset-list">
             {userPresets.map((preset) =>
               renderPresetItem(
@@ -131,11 +135,19 @@ export default function PresetPicker({
         </section>
       )}
 
-      {renderBuiltinSection("雛形", groups.general)}
+      {renderBuiltinSection(
+        "雛形",
+        "あらかじめ用意された差定です。複製すると自分用に整えられます。",
+        groups.general,
+      )}
       {/* 棚経などは僧侶が檀家宅で読むもの。檀信徒が最初に目にしないよう下に分ける */}
-      {renderBuiltinSection("僧侶向け", groups.priest)}
+      {renderBuiltinSection(
+        "僧侶向け",
+        "棚経など、僧侶が檀家宅で読むものです。",
+        groups.priest,
+      )}
       {/* 動作確認用。本番のビルドでは空になり、見出しごと出ない */}
-      {renderBuiltinSection("開発用", groups.dev)}
+      {renderBuiltinSection("開発用", "動作確認用です(本番では表示されません)。", groups.dev)}
 
       <section className="preset-section">
         <h3>JSONから読み込む</h3>

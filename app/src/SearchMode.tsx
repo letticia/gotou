@@ -546,6 +546,11 @@ export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
           一節から典拠をさがす
         </button>
       </div>
+      {queryMode === "tenkyo" && (
+        <p className="query-mode-hint">
+          典拠(出典)をさがします。法語や偈文の一節を貼り付けてください。
+        </p>
+      )}
       {loadState.status === "checking" && <p className="empty">辞書データを確認中…</p>}
       {loadState.status === "acquiring" && (
         <div className="download-progress">

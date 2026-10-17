@@ -310,6 +310,14 @@ body {
   line-height: 1.85;
 }
 
+/* 逆引きモードに切り替えたときだけ出す一行の説明(典拠=出典) */
+.query-mode-hint {
+  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
 /* 検索の種類(見出し語 / 逆引き典拠)の切り替え。セグメンテッドコントロール風 */
 .query-mode-toggle {
   display: flex;
@@ -1917,6 +1925,23 @@ body {
   min-height: var(--tap-min);
   color: var(--accent);
   font-size: 1rem;
+}
+
+/* 差定選択の画面で、何を選ぶ画面か・各見出しが何かを一行で添える。
+   差定・雛形は僧侶の言葉なので、言葉は残して説明だけ補う。 */
+.preset-picker-lead {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.preset-section-note {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-tertiary);
 }
 
 /* セクション見出し(「マイ差定」「雛形」)。iOSのグループ見出しに倣う */

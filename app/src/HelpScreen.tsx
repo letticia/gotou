@@ -93,7 +93,7 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
             <b>辞書の項目</b> … その一節を引用・解説している項目。タップで本文へ。
           </li>
           <li>
-            <b>勤行テキスト</b> … 収録されている偈文と、それを含む差定の名前。
+            <b>勤行テキスト</b> … 収録されている偈文(げもん)と、それを含む差定の名前。
           </li>
           <li>
             <b>浄土宗全書テキストデータベース</b>
@@ -110,7 +110,7 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
           <li>「差定を選ぶ」から、読むおつとめを選びます。</li>
-          <li>差定名が出る扉の画面をタップすると始まります。</li>
+          <li>差定名が出る扉(差定の名前が出る最初の画面)をタップすると始まります。</li>
           <li>画面をタップするとページが進みます。片手で持って親指で送れます。</li>
           <li>戻るときは左上の「← 前へ」。</li>
           <li>
