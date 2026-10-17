@@ -188,7 +188,8 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
       <section className="settings-group settings-textblock">
         <ul className="settings-list">
           <li>
-            用意されている差定は雛形です。「複製して編集」すると自分の差定になります。
+            {"用意されている差定は雛形です。「複製して編集」すると自分の差定になります。"
+              + "棚経のように僧侶が檀家宅で読むものは「僧侶向け」として分けてあります。"}
           </li>
           <li>
             自分の差定(「マイ差定」)は、偈文の並べ替え・オンオフ・回数の指定ができます。

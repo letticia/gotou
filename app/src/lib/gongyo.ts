@@ -28,10 +28,16 @@ export interface GongyoPresetItem {
   enabled?: boolean;
 }
 
+/** 雛形の対象。省略時は一般(檀信徒を含む誰でも)。
+ *  priest … 僧侶が檀家宅などで読むもの(棚経など)。一覧で分けて置く。
+ *  dev … 動作確認用。本番の一覧には出さない。 */
+export type GongyoPresetAudience = "priest" | "dev";
+
 export interface GongyoPreset {
   version: number;
   id: string;
   name: string;
+  audience?: GongyoPresetAudience;
   items: GongyoPresetItem[];
 }
 

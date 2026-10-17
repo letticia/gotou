@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import type { GongyoPreset } from "./lib/gongyo";
 import { buildShareUrl, isValidGongyoPreset } from "./lib/presetSharing";
+import { groupBuiltinPresets } from "./lib/presetGroups";
 
 interface PresetPickerProps {
   builtinPresets: GongyoPreset[];
@@ -67,6 +68,32 @@ export default function PresetPicker({
     );
   }
 
+  const groups = groupBuiltinPresets(builtinPresets, import.meta.env.DEV);
+
+  function renderBuiltinSection(title: string, presets: GongyoPreset[]) {
+    if (presets.length === 0) return null;
+    return (
+      <section className="preset-section">
+        <h3>{title}</h3>
+        <ul className="preset-list">
+          {presets.map((preset) =>
+            renderPresetItem(
+              preset,
+              <>
+                <button type="button" onClick={() => onStart(preset.id)}>
+                  はじめる
+                </button>
+                <button type="button" onClick={() => onDuplicateEdit(preset)}>
+                  複製して編集
+                </button>
+              </>,
+            ),
+          )}
+        </ul>
+      </section>
+    );
+  }
+
   return (
     <div className="preset-picker">
       <div className="preset-picker-header">
@@ -104,24 +131,11 @@ export default function PresetPicker({
         </section>
       )}
 
-      <section className="preset-section">
-        <h3>雛形</h3>
-        <ul className="preset-list">
-          {builtinPresets.map((preset) =>
-            renderPresetItem(
-              preset,
-              <>
-                <button type="button" onClick={() => onStart(preset.id)}>
-                  はじめる
-                </button>
-                <button type="button" onClick={() => onDuplicateEdit(preset)}>
-                  複製して編集
-                </button>
-              </>,
-            ),
-          )}
-        </ul>
-      </section>
+      {renderBuiltinSection("雛形", groups.general)}
+      {/* 棚経などは僧侶が檀家宅で読むもの。檀信徒が最初に目にしないよう下に分ける */}
+      {renderBuiltinSection("僧侶向け", groups.priest)}
+      {/* 動作確認用。本番のビルドでは空になり、見出しごと出ない */}
+      {renderBuiltinSection("開発用", groups.dev)}
 
       <section className="preset-section">
         <h3>JSONから読み込む</h3>
