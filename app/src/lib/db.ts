@@ -25,7 +25,17 @@ export interface DictionaryDb {
   /** 収録語から無作為に何件か返す(検索前の画面で語との出あいをつくるため) */
   randomEntries(limit: number): SuggestionRow[];
   getEntry(id: number): EntryRow | null;
+  /** 見出しの一覧(語釈リンクの照合用)。minLength字未満の見出しは除く */
+  listHeadwords(minLength: number): HeadwordRow[];
+  /** 本文の冒頭(語釈の小窓に出す)。続きがあれば末尾に「…」 */
+  getExcerpt(id: number, maxChars: number): string;
   close(): void;
+}
+
+export interface HeadwordRow {
+  id: number;
+  title: string;
+  reading: string;
 }
 
 /** LIKEのワイルドカード(% _)とエスケープ文字自身を無効化する。
@@ -144,6 +154,37 @@ export async function openDatabaseFromBytes(bytes: Uint8Array): Promise<Dictiona
         },
       });
       return result;
+    },
+
+    listHeadwords(minLength) {
+      const rows: HeadwordRow[] = [];
+      db.exec({
+        sql: "SELECT id, title, reading FROM entries WHERE length(title) >= ? ORDER BY id",
+        bind: [minLength],
+        rowMode: "object",
+        callback: (row) => {
+          rows.push({
+            id: row.id as number,
+            title: row.title as string,
+            reading: row.reading as string,
+          });
+        },
+      });
+      return rows;
+    },
+
+    getExcerpt(id, maxChars) {
+      let excerpt = "";
+      db.exec({
+        sql: "SELECT substr(body_text, 1, ?) AS excerpt, length(body_text) AS len FROM entries_fts WHERE rowid = ?",
+        bind: [maxChars, id],
+        rowMode: "object",
+        callback: (row) => {
+          const text = ((row.excerpt as string) ?? "").trim();
+          excerpt = (row.len as number) > maxChars ? `${text}…` : text;
+        },
+      });
+      return excerpt;
     },
 
     close() {

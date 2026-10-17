@@ -677,6 +677,104 @@ body {
   background: var(--fill-subtle);
 }
 
+/* --- 語釈リンク(御法語の本文の語 → 辞書) --- */
+.gloss-link {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-decoration: underline dotted var(--accent);
+  text-underline-offset: 0.3em;
+  text-decoration-thickness: 1.5px;
+  cursor: pointer;
+}
+
+.gloss-link:active {
+  background: var(--fill-subtle);
+}
+
+.gloss-unavailable {
+  margin: var(--space-4) 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.gloss-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.gloss-sheet {
+  box-sizing: border-box;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 25%);
+  animation: gotou-sheet-up 0.2s ease-out;
+}
+
+.gloss-sheet-title {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-content);
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.gloss-sheet-reading {
+  margin-left: var(--space-3);
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+
+.gloss-sheet-excerpt {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+.gloss-sheet-source {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+
+.gloss-sheet-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.gloss-sheet-actions button {
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.gloss-sheet-actions .gloss-sheet-open {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* 辞書の検索前の画面に出す「今日の御法語」 */
 .gohogo-today-list {
   list-style: none;

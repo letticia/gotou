@@ -51,6 +51,8 @@ export default function App() {
   const [gohogoTarget, setGohogoTarget] = useState<{ hen: GohogoHen; chapter: number } | null>(
     null,
   );
+  // 御法語の語釈から「辞書で開く」で辞書タブのその項目へ渡すための受け渡し
+  const [dictionaryTarget, setDictionaryTarget] = useState<number | null>(null);
   const [fontChoice, setFontChoice] = useState<FontChoice>(() => loadFontChoice());
   // GongyoMode自身はマウント時にloadCounterMode()を直接読むため、ここでの状態は
   // 設定画面へ値を渡し・変更を保存する橋渡し役のみ(GongyoModeへは渡さない)
@@ -102,6 +104,11 @@ export default function App() {
   function handleGohogoHenChange(next: GohogoHen) {
     setGohogoHen(next);
     saveGohogoHen(next);
+  }
+
+  function handleOpenDictionaryEntry(entryId: number) {
+    setDictionaryTarget(entryId);
+    setMode("search");
   }
 
   function handleOpenGohogo(hen: GohogoHen, chapter: number) {
@@ -172,12 +179,19 @@ export default function App() {
               </button>
             </header>
           )}
-          {mode === "search" && <SearchMode onOpenGohogo={handleOpenGohogo} />}
+          {mode === "search" && (
+            <SearchMode
+              onOpenGohogo={handleOpenGohogo}
+              initialEntryId={dictionaryTarget}
+              onEntryHandled={() => setDictionaryTarget(null)}
+            />
+          )}
           {mode === "gohogo" && (
             <GohogoMode
               initialTarget={gohogoTarget}
               onTargetHandled={() => setGohogoTarget(null)}
               fontScaleRow={<FontScaleRow />}
+              onOpenDictionaryEntry={handleOpenDictionaryEntry}
             />
           )}
           {mode === "gongyo" && (

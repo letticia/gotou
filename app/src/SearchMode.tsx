@@ -69,9 +69,16 @@ type LoadState =
 interface SearchModeProps {
   /** 「今日の御法語」から御法語タブのその章へ渡す */
   onOpenGohogo?: (hen: GohogoHen, chapter: number) => void;
+  /** 御法語の語釈から「辞書で開く」で渡された項目。辞書が開けたら表示する */
+  initialEntryId?: number | null;
+  onEntryHandled?: () => void;
 }
 
-export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
+export default function SearchMode({
+  onOpenGohogo,
+  initialEntryId,
+  onEntryHandled,
+}: SearchModeProps = {}) {
   const [db, setDb] = useState<DictionaryDb | null>(null);
   const [loadState, setLoadState] = useState<LoadState>({ status: "checking" });
   const [query, setQuery] = useState("");
@@ -165,6 +172,14 @@ export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
       });
     };
   }, []);
+
+  // 御法語の語釈から渡された項目を、辞書が開けたところで開く
+  useEffect(() => {
+    if (!db || initialEntryId == null) return;
+    setHistory([]);
+    setCurrentId(initialEntryId);
+    onEntryHandled?.();
+  }, [db, initialEntryId, onEntryHandled]);
 
   const normalizedQuery = useMemo(() => normalizeSearchInput(query.trim()), [query]);
   const results = useMemo(() => {
