@@ -17,8 +17,10 @@ import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
 import { loadCounterMode, saveCounterMode } from "./lib/gongyoCounterMode";
 import type { GohogoHen } from "./lib/gohogoHen";
 import { loadGohogoHen, saveGohogoHen } from "./lib/gohogoHen";
+import type { AppMode } from "./lib/lastMode";
+import { loadLastMode, saveLastMode } from "./lib/lastMode";
 
-type Mode = "search" | "gohogo" | "gongyo";
+type Mode = AppMode;
 
 const MODE_TITLES: Record<Mode, string> = {
   search: "辞書",
@@ -29,7 +31,14 @@ const MODE_TITLES: Record<Mode, string> = {
 const FALLBACK_FONT_STACK = 'system-ui, -apple-system, "Hiragino Sans", sans-serif';
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>("search");
+  // 前回開いていたタブから始める(勤行・御法語だけを使う人が、毎回辞書の
+  // 「ダウンロード開始」画面を見ずに済むように)
+  const [mode, setModeState] = useState<Mode>(() => loadLastMode());
+
+  function setMode(next: Mode) {
+    setModeState(next);
+    saveLastMode(next);
+  }
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showHelp, setShowHelp] = useState(false);

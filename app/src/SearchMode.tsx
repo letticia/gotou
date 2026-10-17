@@ -38,6 +38,11 @@ import type { GohogoHen } from "./lib/gohogoHen";
 /** 見出し語で引く(既定) / 一節から典拠をさがす(逆引き。docs/tenkyo-spec.md B) */
 type QueryMode = "headword" | "tenkyo";
 
+/** 辞書がまだ使えない画面に添える一行。辞書を取得しなくても使える機能がある
+ *  ことを伝え、最初に出るこの画面を「壁」にしないため */
+const OTHER_TABS_NOTE =
+  "勤行と御法語は、辞書をダウンロードしなくてもすぐに使えます(下のタブから)。";
+
 /** 検索前の画面で紹介する収録語の件数 */
 const SUGGESTION_COUNT = 5;
 
@@ -426,6 +431,7 @@ export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
           <br />
           (ブラウザの共有メニュー等から「ホーム画面に追加」)
         </p>
+        <p className="download-other-tabs">{OTHER_TABS_NOTE}</p>
       </div>
     );
   }
@@ -446,6 +452,7 @@ export default function SearchMode({ onOpenGohogo }: SearchModeProps = {}) {
           >
             ダウンロード開始
           </button>
+          <p className="download-other-tabs">{OTHER_TABS_NOTE}</p>
         </div>
       </div>
     );

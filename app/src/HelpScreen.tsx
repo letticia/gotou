@@ -33,6 +33,10 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
         <p className="settings-body-text">
           一度取得すれば、以後はオフラインで使えます。
         </p>
+        <p className="settings-body-text">
+          {"勤行と御法語は、辞書をダウンロードしなくてもすぐに使えます。"
+            + "アプリは前回開いていたタブから始まります。"}
+        </p>
       </section>
 
       <h3 className="settings-subhead">辞書を引く</h3>

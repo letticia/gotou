@@ -255,6 +255,15 @@ body {
   color: var(--danger);
 }
 
+/* 辞書がまだ使えない画面で、勤行・御法語はすぐ使えることを添える */
+.download-other-tabs {
+  margin-top: var(--space-4);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
 .download-progress {
   margin-bottom: var(--space-4);
 }
