@@ -15,6 +15,7 @@ interface SettingsScreenProps {
   onClose: () => void;
   onOpenHelp: () => void;
   onOpenAbout: () => void;
+  onOpenNenkaiki: () => void;
 }
 
 export default function SettingsScreen({
@@ -27,6 +28,7 @@ export default function SettingsScreen({
   onClose,
   onOpenHelp,
   onOpenAbout,
+  onOpenNenkaiki,
 }: SettingsScreenProps) {
   return (
     <div className="settings-screen">
@@ -98,6 +100,10 @@ export default function SettingsScreen({
       </p>
 
       <section className="settings-group">
+        <button type="button" className="settings-row-button" onClick={onOpenNenkaiki}>
+          <span className="settings-row-label">年回忌の早見表</span>
+          <ChevronRightIcon />
+        </button>
         <button type="button" className="settings-row-button" onClick={onOpenHelp}>
           <span className="settings-row-label">使い方</span>
           <ChevronRightIcon />

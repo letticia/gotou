@@ -1280,6 +1280,81 @@ body {
   margin-top: 0.7em;
 }
 
+/* --- 年回忌の早見表 --- */
+.nenkaiki-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--tap-min);
+  margin-top: var(--space-3);
+}
+
+.nenkaiki-input {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+}
+
+.nenkaiki-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nenkaiki-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--separator);
+  font-family: var(--font-ui);
+}
+
+.nenkaiki-row:last-child {
+  border-bottom: none;
+}
+
+.nenkaiki-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-content);
+}
+
+.nenkaiki-date {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* 過ぎた法要は沈め、次に来る法要だけを立てる */
+.nenkaiki-row-past .nenkaiki-label,
+.nenkaiki-row-past .nenkaiki-date {
+  color: var(--text-tertiary);
+}
+
+.nenkaiki-row-next .nenkaiki-label {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.nenkaiki-next-mark {
+  flex-shrink: 0;
+  padding: 0.1em 0.5em;
+  border-radius: var(--radius-sm);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .settings-footnote {
   margin: var(--space-2) var(--space-1) 0;
   font-family: var(--font-ui);

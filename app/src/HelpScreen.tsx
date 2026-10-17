@@ -201,6 +201,25 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
         </ul>
       </section>
 
+      <h3 className="settings-subhead">年回忌の早見表</h3>
+      <section className="settings-group settings-textblock">
+        <p className="settings-body-text">
+          {"設定の「年回忌の早見表」で命日を入れると、中陰(初七日〜四十九日)・百箇日・"
+            + "年回忌(一周忌・三・七・十三・十七・二十三・二十七・三十三・五十回忌)の日付が"
+            + "出ます。次に来る法要には「次」の印が付きます。"}
+        </p>
+        <ul className="settings-list">
+          <li>
+            {"命日を1日目として数えています(地域によっては前日から数えることもあります)。"}
+          </li>
+          <li>
+            {"年回忌は亡くなった年を1として数えます(一周忌は満1年、三回忌は満2年)。"}
+          </li>
+          <li>入れた命日は保存しません(この端末にも残りません)。</li>
+          <li>法要の日取りは菩提寺とご相談ください。</li>
+        </ul>
+      </section>
+
       <h3 className="settings-subhead">オフラインでの利用</h3>
       <section className="settings-group settings-textblock">
         <p className="settings-body-text">

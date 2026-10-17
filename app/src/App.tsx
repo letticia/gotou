@@ -6,6 +6,7 @@ import FontScaleRow from "./FontScaleRow";
 import SettingsScreen from "./SettingsScreen";
 import AboutScreen from "./AboutScreen";
 import HelpScreen from "./HelpScreen";
+import NenkaikiScreen from "./NenkaikiScreen";
 import { BookIcon, FlameIcon, GearIcon, ScrollIcon } from "./Icons";
 import type { GongyoPreset } from "./lib/gongyo";
 import { parseShareHash } from "./lib/presetSharing";
@@ -32,6 +33,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showNenkaiki, setShowNenkaiki] = useState(false);
   const [pendingImport, setPendingImport] = useState<GongyoPreset | null>(null);
   // 辞書の「今日の御法語」から御法語タブのその章へ渡すための受け渡し
   // (差定の共有URLで勤行へ飛ばす pendingImport と同じ流儀)
@@ -117,6 +119,8 @@ export default function App() {
       {showSettings ? (
         showHelp ? (
           <HelpScreen onClose={() => setShowHelp(false)} />
+        ) : showNenkaiki ? (
+          <NenkaikiScreen onClose={() => setShowNenkaiki(false)} />
         ) : showAbout ? (
           <AboutScreen onClose={() => setShowAbout(false)} />
         ) : (
@@ -130,6 +134,7 @@ export default function App() {
             onClose={() => setShowSettings(false)}
             onOpenHelp={() => setShowHelp(true)}
             onOpenAbout={() => setShowAbout(true)}
+            onOpenNenkaiki={() => setShowNenkaiki(true)}
           />
         )
       ) : (
