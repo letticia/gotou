@@ -1,6 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
 import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
 import type { GohogoHen } from "./lib/gohogoHen";
+import type { GongyoRubySize } from "./lib/gongyoRubySize";
 import { GOHOGO_HEN_LABELS } from "./lib/gohogoHen";
 import type { FontChoice } from "./lib/fontChoice";
 import { FONT_LABELS } from "./lib/fontChoice";
@@ -12,6 +13,8 @@ interface SettingsScreenProps {
   onCounterModeChange: (mode: GongyoCounterMode) => void;
   gohogoHen: GohogoHen;
   onGohogoHenChange: (hen: GohogoHen) => void;
+  rubySize: GongyoRubySize;
+  onRubySizeChange: (size: GongyoRubySize) => void;
   onClose: () => void;
   onOpenHelp: () => void;
   onOpenAbout: () => void;
@@ -25,6 +28,8 @@ export default function SettingsScreen({
   onCounterModeChange,
   gohogoHen,
   onGohogoHenChange,
+  rubySize,
+  onRubySizeChange,
   onClose,
   onOpenHelp,
   onOpenAbout,
@@ -73,6 +78,20 @@ export default function SettingsScreen({
           </select>
         </div>
         <div className="settings-row">
+          <label className="settings-row-label" htmlFor="settings-ruby-size">
+            勤行の読み(ふりがな)
+          </label>
+          <select
+            id="settings-ruby-size"
+            className="settings-select"
+            value={rubySize}
+            onChange={(event) => onRubySizeChange(event.target.value as GongyoRubySize)}
+          >
+            <option value="normal">標準(既定)</option>
+            <option value="large">大きく</option>
+          </select>
+        </div>
+        <div className="settings-row">
           <label className="settings-row-label" htmlFor="settings-gohogo-hen">
             日替わり御法語の篇
           </label>
@@ -95,6 +114,8 @@ export default function SettingsScreen({
         辞書と勤行の本文に使う書体です。文字の大きさは辞書の画面で変えられます。
         十念・三唱礼は既定では名前を1回示すだけで次へ進みます。回数を数えながら
         唱えたい場合は切り替えてください。
+        勤行の読み(ふりがな)は「大きく」にすると読みやすくなりますが、本文が少し小さく
+        なることがあります。
         日替わり御法語は、その日の日付と同じ番号の章を読みます(1日なら第一章)。
         前篇・後篇のどちらから読むかをここで選べます。
       </p>

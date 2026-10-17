@@ -1954,7 +1954,7 @@ body {
        (下限を設けると狭い端末で列がはみ出す) */
     calc(
       (100vw - 3.5rem - 0.6rem * (var(--gongyo-columns, 1) - 1)) /
-      var(--gongyo-columns, 1) / 2.1
+      var(--gongyo-columns, 1) / var(--gongyo-column-em, 2.1)
     ),
     /* 高さの制約にだけ下限を設ける。一枚起請文(114字)のような長文を1列に
        押し込もうとすると数pxまで縮んで読めなくなるため、下限で止めて
@@ -1970,7 +1970,20 @@ body {
 }
 
 .gongyo-vertical .gongyo-line .gongyo-ruby {
-  font-size: 0.4em;
+  font-size: calc(var(--gongyo-ruby-scale, 0.4) * 1em);
+}
+
+/* 設定「読みを大きく」。ルビを0.4倍→0.55倍にし、そのぶん1列の幅の見積り
+   (本文1.4em + ルビ0.4em×行高1.2 + 間隔 ≒ 2.1em)を2.3emに広げる。
+   高さ方向の見積りは gongyo.ts の rubyRatio で同じ0.55を使う(gongyoRubySize.ts)。
+   横書きはルビが自由に折り返せるので、固定値を上げるだけでよい。 */
+.gongyo-ruby-large {
+  --gongyo-ruby-scale: 0.55;
+  --gongyo-column-em: 2.3;
+}
+
+.gongyo-ruby-large:not(.gongyo-vertical) .gongyo-ruby {
+  font-size: 1.55rem;
 }
 
 /* エコー行は本文より一段小さくして、続きの目印であることを見た目でも区別する */

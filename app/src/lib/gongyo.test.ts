@@ -48,12 +48,14 @@ const units = new Map<string, GongyoUnit>([
       reading: "ろんぐゆにっと",
       paginated: true,
       // 1句12文字(<=20文字なのでpaginatedBatchSize=4になる)
+      // 字数による句数の規則を確かめるためのダミーなのでルビは付けない
+      // (ルビ付きの句は別の規則で句数が減る。下の paginatedBatchSize のテスト参照)
       body: [
-        { text: "AAAAAAAAAAAA", ruby: "a" },
-        { text: "BBBBBBBBBBBB", ruby: "b" },
-        { text: "CCCCCCCCCCCC", ruby: "c" },
-        { text: "DDDDDDDDDDDD", ruby: "d" },
-        { text: "EEEEEEEEEEEE", ruby: "e" },
+        { text: "AAAAAAAAAAAA" },
+        { text: "BBBBBBBBBBBB" },
+        { text: "CCCCCCCCCCCC" },
+        { text: "DDDDDDDDDDDD" },
+        { text: "EEEEEEEEEEEE" },
       ],
     },
   ],
@@ -174,10 +176,10 @@ describe("buildPages", () => {
         itemIndex: 0,
         unitTitle: "ロングユニット",
         lines: [
-          { text: "AAAAAAAAAAAA", ruby: "a" },
-          { text: "BBBBBBBBBBBB", ruby: "b" },
-          { text: "CCCCCCCCCCCC", ruby: "c" },
-          { text: "DDDDDDDDDDDD", ruby: "d" },
+          { text: "AAAAAAAAAAAA" },
+          { text: "BBBBBBBBBBBB" },
+          { text: "CCCCCCCCCCCC" },
+          { text: "DDDDDDDDDDDD" },
         ],
         paginated: true,
         counterTotal: undefined,
@@ -188,8 +190,8 @@ describe("buildPages", () => {
         unitTitle: "ロングユニット",
         paginated: true,
         lines: [
-          { text: "DDDDDDDDDDDD", ruby: "d", dimmed: true },
-          { text: "EEEEEEEEEEEE", ruby: "e" },
+          { text: "DDDDDDDDDDDD", dimmed: true },
+          { text: "EEEEEEEEEEEE" },
         ],
         counterTotal: undefined,
       },
@@ -528,6 +530,26 @@ describe("firstPageIndexOfItem", () => {
   it("falls back to the beginning for an unknown item index", () => {
     expect(firstPageIndexOfItem(pages, 99)).toBe(0);
     expect(firstPageIndexOfItem([], 0)).toBe(0);
+  });
+});
+
+describe("paginatedBatchSize with ruby", () => {
+  function unit(text: string, ruby?: string): GongyoUnit {
+    return { id: "u", title: "u", reading: "u", paginated: true, body: [{ text, ruby }] };
+  }
+
+  it("takes two clauses per page when ruby-bearing clauses are longer than 10", () => {
+    // 一枚起請文・御法語。4句だとルビの行ぶん下端をはみ出す
+    expect(paginatedBatchSize(unit("あ".repeat(19), "あ".repeat(24)))).toBe(2);
+  });
+
+  it("keeps short ruby-bearing clauses at six, or four with the larger reading", () => {
+    expect(paginatedBatchSize(unit("あ".repeat(8), "あ".repeat(10)))).toBe(6);
+    expect(paginatedBatchSize(unit("あ".repeat(8), "あ".repeat(10)), true)).toBe(4);
+  });
+
+  it("leaves clauses without ruby to the length rule", () => {
+    expect(paginatedBatchSize(unit("あ".repeat(19)))).toBe(4);
   });
 });
 

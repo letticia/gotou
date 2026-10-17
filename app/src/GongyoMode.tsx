@@ -27,6 +27,7 @@ import {
 } from "./lib/gohogo";
 import { loadGohogoHen } from "./lib/gohogoHen";
 import { loadCounterMode } from "./lib/gongyoCounterMode";
+import { RUBY_TO_TEXT_RATIO, loadRubySize } from "./lib/gongyoRubySize";
 import { loadOrientation, saveOrientation, toggleOrientation } from "./lib/gongyoOrientation";
 import { advance, goBack, initState } from "./lib/gongyoNav";
 import type { GongyoNavState } from "./lib/gongyoNav";
@@ -111,6 +112,9 @@ export default function GongyoMode({
   // (Appは設定画面表示中GongyoModeをアンマウントするため、再マウント時にここで
   // 読み直すだけで最新の設定が反映される。orientationのようなヘッダートグルは無い)
   const [counterMode] = useState(() => loadCounterMode());
+  // 読み(ルビ)の大きさ。設定画面で変える(再マウント時に読み直す)
+  const [rubySize] = useState(() => loadRubySize());
+  const rubyRatio = RUBY_TO_TEXT_RATIO[rubySize];
   // 日替わり御法語で読む篇。counterModeと同じく、再マウント時に読み直す
   const [gohogoHen] = useState(() => loadGohogoHen());
   // その日の章を1回だけ決め、勤行の間は動かさない。日付をまたいでもおつとめの
@@ -153,8 +157,9 @@ export default function GongyoMode({
   );
   // 縦書きと横書きでは1タップで進む行数が異なるため、向きが変わるとページ構成も変わる
   const pages = useMemo(
-    () => (preset ? buildPages(preset, resolvedUnits, orientation, counterMode) : []),
-    [preset, resolvedUnits, orientation, counterMode],
+    () =>
+      preset ? buildPages(preset, resolvedUnits, orientation, counterMode, rubyRatio) : [],
+    [preset, resolvedUnits, orientation, counterMode, rubyRatio],
   );
 
   const outline = useMemo(() => buildOutline(pages), [pages]);
@@ -466,11 +471,13 @@ export default function GongyoMode({
   const isVertical = orientation === "vertical";
   const linesClassName = isVertical
     ? "gongyo-lines"
-    : `gongyo-lines gongyo-lines-size-${sizeTierFor(page)}`;
+    : `gongyo-lines gongyo-lines-size-${sizeTierFor(page, rubySize === "large")}`;
   const linesStyle = isVertical
     ? ({
         "--gongyo-columns": page.verticalColumns ?? verticalColumnCount(page.lines),
-        "--gongyo-max-chars": Math.ceil(page.verticalMaxChars ?? verticalMaxLineLength(page.lines)),
+        "--gongyo-max-chars": Math.ceil(
+          page.verticalMaxChars ?? verticalMaxLineLength(page.lines, rubyRatio),
+        ),
       } as React.CSSProperties)
     : undefined;
   // カウンター(十念等の残り回数)が出る回は本文の領域がそのぶん狭くなる。
@@ -479,6 +486,7 @@ export default function GongyoMode({
     "gongyo",
     `gongyo-${orientation}`,
     nav.counterRemaining !== null && "gongyo-has-counter",
+    rubySize === "large" && "gongyo-ruby-large",
   ]
     .filter(Boolean)
     .join(" ");

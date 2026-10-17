@@ -1,5 +1,6 @@
 import type { GongyoCounterMode } from "./gongyoCounterMode";
 import type { GongyoOrientation } from "./gongyoOrientation";
+import { RUBY_TO_TEXT_RATIO as RUBY_RATIOS } from "./gongyoRubySize";
 
 export interface GongyoUnitBodyItem {
   text: string;
@@ -104,8 +105,14 @@ export function loadGongyoPresets(): Map<string, GongyoPreset> {
  * 114字のような極端に長い句は3句まとめると画面の高さを超えてしまう。そのため
  * 60字を超える句を持つunitは1句ずつに減らし、文字サイズの段階(paginatedSizeTier)
  * だけでなく行数そのものを絞ることで画面に収める。 */
-export function paginatedBatchSize(unit: GongyoUnit): number {
+export function paginatedBatchSize(unit: GongyoUnit, rubyLarge = false): number {
   const maxLength = unit.body.reduce((max, b) => Math.max(max, b.text.length), 0);
+  // ルビ付きの句は、ルビの行ぶん1句あたりの高さが増える。字数だけで句数を決めると
+  // 下端をはみ出す(一枚起請文に読みを付けて28句に分けたとき、4句で81px超過した)。
+  // 10字を超えるルビ付きの句は2句ずつ、短い句でも「読みを大きく」なら4句までにする。
+  const hasRuby = unit.body.some((b) => b.ruby);
+  if (hasRuby && maxLength > 10) return 2;
+  if (hasRuby && rubyLarge) return 4;
   if (maxLength <= 10) return 6;
   if (maxLength <= 20) return 4;
   if (maxLength <= 60) return 3;
@@ -122,8 +129,14 @@ export function verticalPaginatedBatchSize(unit: GongyoUnit): number {
 }
 
 /** 向きに応じたバッチ行数を返す */
-export function batchSizeFor(unit: GongyoUnit, orientation: GongyoOrientation): number {
-  return orientation === "vertical" ? verticalPaginatedBatchSize(unit) : paginatedBatchSize(unit);
+export function batchSizeFor(
+  unit: GongyoUnit,
+  orientation: GongyoOrientation,
+  rubyLarge = false,
+): number {
+  return orientation === "vertical"
+    ? verticalPaginatedBatchSize(unit)
+    : paginatedBatchSize(unit, rubyLarge);
 }
 
 /**
@@ -137,6 +150,8 @@ export function buildPages(
   unitsById: Map<string, GongyoUnit>,
   orientation: GongyoOrientation = "horizontal",
   counterMode: GongyoCounterMode = "label",
+  /** ルビが本文の何倍の字送りか(設定「読みを大きく」で変わる。gongyoRubySize.ts) */
+  rubyRatio: number = RUBY_TO_TEXT_RATIO,
 ): GongyoPage[] {
   const pages: GongyoPage[] = [];
   for (const [itemIndex, item] of preset.items.entries()) {
@@ -160,7 +175,11 @@ export function buildPages(
     const body = orientation === "vertical" ? verticalBody(unit.body) : unit.body;
 
     if (unit.paginated) {
-      const batchSize = batchSizeFor({ ...unit, body }, orientation);
+      const batchSize = batchSizeFor(
+        { ...unit, body },
+        orientation,
+        rubyRatio > RUBY_TO_TEXT_RATIO,
+      );
       for (let i = 0; i < body.length; i += batchSize) {
         const lines: GongyoPageLine[] = [];
         // バッチが1行のとき(一枚起請文のように1句が非常に長いunit)はエコーを出さない。
@@ -193,7 +212,7 @@ export function buildPages(
       });
     }
   }
-  if (orientation === "vertical") unifyVerticalSizing(pages);
+  if (orientation === "vertical") unifyVerticalSizing(pages, rubyRatio);
   return pages;
 }
 
@@ -201,13 +220,13 @@ export function buildPages(
  * ページごとに最適化すると、句の長さの差でページ送りのたびに字が大きくなったり
  * 小さくなったりしてしまうため(阿弥陀如来根本陀羅尼・一枚起請文で顕著)、
  * そのunit(1回の読誦)を通して固定した字送りにする。 */
-function unifyVerticalSizing(pages: GongyoPage[]): void {
+function unifyVerticalSizing(pages: GongyoPage[], rubyRatio: number): void {
   const maxByItem = new Map<number, { columns: number; maxChars: number }>();
   for (const page of pages) {
     const current = maxByItem.get(page.itemIndex) ?? { columns: 1, maxChars: 1 };
     maxByItem.set(page.itemIndex, {
       columns: Math.max(current.columns, verticalColumnCount(page.lines)),
-      maxChars: Math.max(current.maxChars, verticalMaxLineLength(page.lines)),
+      maxChars: Math.max(current.maxChars, verticalMaxLineLength(page.lines, rubyRatio)),
     });
   }
   for (const page of pages) {
@@ -263,8 +282,9 @@ export function paginatedSizeTier(lines: GongyoPageLine[]): 1 | 2 | 3 | 4 {
 // 実際の字送りはCSS側のmin()が画面の実寸から決める(index.cssの.gongyo-vertical参照)。
 
 /** ルビは本文のおよそ0.4倍の字送りで、縦書きでは本文と同じ高さ方向を占める。
- * 本文が短くルビが極端に長い行(摂益文・破地獄偈等)で必要な高さを見誤らないための係数。 */
-const RUBY_TO_TEXT_RATIO = 0.4;
+ * 本文が短くルビが極端に長い行(摂益文・破地獄偈等)で必要な高さを見誤らないための係数。
+ * 設定「読みを大きく」では0.55倍になる(呼び出し側から rubyRatio で渡す)。 */
+const RUBY_TO_TEXT_RATIO = RUBY_RATIOS.normal;
 
 /** 縦書きで1列に入る字数の目安。これを超える句は複数列に折り返す前提で列数を数える。
  * 小さすぎる値にすると、実際には折り返さない句まで複数列と数えてしまい、
@@ -285,8 +305,11 @@ export const VERTICAL_MAX_CHARS_PER_LINE =
 const VERTICAL_PAIR_MAX_LENGTH = 8;
 
 /** 行が高さ方向に必要とする字数(ルビが本文より長い場合はルビ換算で評価する) */
-function effectiveLineLength(line: GongyoPageLine): number {
-  return Math.max(line.text.length, (line.ruby?.length ?? 0) * RUBY_TO_TEXT_RATIO);
+function effectiveLineLength(
+  line: GongyoPageLine,
+  rubyRatio: number = RUBY_TO_TEXT_RATIO,
+): number {
+  return Math.max(line.text.length, (line.ruby?.length ?? 0) * rubyRatio);
 }
 
 /** その行が折り返しで占める列数。
@@ -312,10 +335,13 @@ export function verticalColumnCount(lines: GongyoPageLine[]): number {
 /** 1列に入る字数の最大値を返す(長い句は折り返す列数で割った値になる)。
  * エコー行(dimmed)は専用の小さいサイズで描かれるため対象外。
  * 0除算を避けるため最小値は1。 */
-export function verticalMaxLineLength(lines: GongyoPageLine[]): number {
+export function verticalMaxLineLength(
+  lines: GongyoPageLine[],
+  rubyRatio: number = RUBY_TO_TEXT_RATIO,
+): number {
   const visible = lines.filter((line) => !line.dimmed);
   return visible.reduce((max, line) => {
-    const perColumn = effectiveLineLength(line) / columnsForLine(line);
+    const perColumn = effectiveLineLength(line, rubyRatio) / columnsForLine(line);
     return Math.max(max, Math.ceil(perColumn));
   }, 1);
 }
@@ -458,6 +484,12 @@ export function firstPageIndexOfItem(pages: GongyoPage[], itemIndex: number): nu
 
 /** 横書きのページ種別に応じた文字サイズの段階を返す。
  * 縦書きは段階ではなくCSS側のmin()で字送りを決めるため、この関数は使わない。 */
-export function sizeTierFor(page: GongyoPage): 1 | 2 | 3 | 4 {
-  return page.paginated ? paginatedSizeTier(page.lines) : lineSizeTier(page.lines.length);
+export function sizeTierFor(page: GongyoPage, rubyLarge = false): 1 | 2 | 3 | 4 {
+  const tier = page.paginated ? paginatedSizeTier(page.lines) : lineSizeTier(page.lines.length);
+  // 「読みを大きく」では、ルビ付きの行があるページの本文を一段小さくして
+  // ルビが増やした高さを吸収する(横書きの段階方式はルビの大きさを見込んでいないため)
+  if (rubyLarge && page.lines.some((line) => line.ruby)) {
+    return Math.min(4, tier + 1) as 1 | 2 | 3 | 4;
+  }
+  return tier;
 }

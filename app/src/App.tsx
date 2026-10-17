@@ -17,6 +17,8 @@ import type { GongyoCounterMode } from "./lib/gongyoCounterMode";
 import { loadCounterMode, saveCounterMode } from "./lib/gongyoCounterMode";
 import type { GohogoHen } from "./lib/gohogoHen";
 import { loadGohogoHen, saveGohogoHen } from "./lib/gohogoHen";
+import type { GongyoRubySize } from "./lib/gongyoRubySize";
+import { loadRubySize, saveRubySize } from "./lib/gongyoRubySize";
 import type { AppMode } from "./lib/lastMode";
 import { loadLastMode, saveLastMode } from "./lib/lastMode";
 
@@ -55,6 +57,8 @@ export default function App() {
   const [counterMode, setCounterMode] = useState<GongyoCounterMode>(() => loadCounterMode());
   // 篇の選択も同様。GongyoModeは再マウント時にloadGohogoHen()を直接読む
   const [gohogoHen, setGohogoHen] = useState<GohogoHen>(() => loadGohogoHen());
+  // 勤行の読みの大きさも同様(GongyoModeは再マウント時に直接読む)
+  const [rubySize, setRubySize] = useState<GongyoRubySize>(() => loadRubySize());
   // 勤行の読誦中は画面全体を経本にする(タブバー・ナビバーを隠す)。
   // 「画面下半分どこでもタップでページ送り」(CLAUDE.md)とボトムタブバーは
   // 操作が衝突するため、読誦中だけは必ず隠す。GongyoModeが状態を教えてくれる。
@@ -88,6 +92,11 @@ export default function App() {
   function handleCounterModeChange(next: GongyoCounterMode) {
     setCounterMode(next);
     saveCounterMode(next);
+  }
+
+  function handleRubySizeChange(next: GongyoRubySize) {
+    setRubySize(next);
+    saveRubySize(next);
   }
 
   function handleGohogoHenChange(next: GohogoHen) {
@@ -140,6 +149,8 @@ export default function App() {
             onCounterModeChange={handleCounterModeChange}
             gohogoHen={gohogoHen}
             onGohogoHenChange={handleGohogoHenChange}
+            rubySize={rubySize}
+            onRubySizeChange={handleRubySizeChange}
             onClose={() => setShowSettings(false)}
             onOpenHelp={() => setShowHelp(true)}
             onOpenAbout={() => setShowAbout(true)}
