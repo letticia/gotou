@@ -2019,6 +2019,80 @@ body {
   color: var(--text-tertiary);
 }
 
+/* --- お寺から配る差定 --- */
+.preset-import-from {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.preset-from-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 var(--space-4);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+}
+
+/* iPhoneのブラウザで受け取ったときの、アプリ側で読み込み直す案内 */
+.preset-ios-note {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.preset-ios-note p {
+  margin: 0 0 var(--space-2);
+}
+
+.preset-ios-note ol {
+  margin: 0 0 var(--space-3);
+  padding-left: 1.4em;
+}
+
+.preset-ios-note button {
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.share-hint {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+/* 扉に出す配布元(お寺の名前) */
+.gongyo-intro-from {
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-2);
+  font-family: var(--font-content);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 /* セクション見出し(「マイ差定」「雛形」)。iOSのグループ見出しに倣う */
 .preset-section h3 {
   font-size: 0.78rem;

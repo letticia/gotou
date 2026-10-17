@@ -37,6 +37,8 @@ export interface GongyoPreset {
   version: number;
   id: string;
   name: string;
+  /** 配布元(お寺の名前など)。お寺が檀信徒に配る差定に付ける。省略可 */
+  from?: string;
   audience?: GongyoPresetAudience;
   items: GongyoPresetItem[];
 }

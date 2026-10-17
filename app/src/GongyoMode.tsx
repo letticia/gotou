@@ -40,6 +40,9 @@ import {
   saveUserPreset,
 } from "./lib/userPresets";
 import GongyoOutline from "./GongyoOutline";
+import { findSamePreset, receivedInIosBrowser } from "./lib/presetDistribution";
+import { buildShareUrl } from "./lib/presetSharing";
+import { isStandalonePwa } from "./lib/pwaDisplayMode";
 import PresetEditor from "./PresetEditor";
 import PresetPicker from "./PresetPicker";
 import { ListIcon } from "./Icons";
@@ -234,20 +237,33 @@ export default function GongyoMode({
     setView({ name: "picker" });
   }
 
-  // 送信元のidをそのまま使わず、取り込んだものは自分の差定として新しいidを振る
-  function importPreset(incoming: GongyoPreset) {
-    saveUserPreset({ ...incoming, id: generateUserPresetId() });
+  /**
+   * 受け取った差定をマイ差定に入れ、そのidを返す。
+   * 送信元のidは使わず、自分の差定として新しいidを振る。
+   * 中身(名前・配布元・並び)が同じものが既にあれば、重複を作らずそれを使う
+   * (お寺で配られたリンクを2回開く、は普通に起こる)。
+   */
+  function importPreset(incoming: GongyoPreset): string {
+    const same = findSamePreset(loadUserPresets(), incoming);
+    if (same) return same.id;
+    const id = generateUserPresetId();
+    // 雛形の対象(audience)は受け取った側では意味を持たないので持ち込まない
+    const { audience: _audience, ...rest } = incoming;
+    saveUserPreset({ ...rest, id });
     setUserPresets(loadUserPresets());
+    return id;
   }
 
-  function handleImportFromJson(incoming: GongyoPreset) {
-    importPreset(incoming);
+  /** 差定選択の画面でリンク・JSONを貼り付けた場合も、同じ受け取り画面を通す */
+  function handleImportFromPaste(incoming: GongyoPreset) {
+    setView({ name: "import", preset: incoming });
   }
 
+  /** 受け取ったらその差定を選び、扉まで直行する(差定選択に戻さない) */
   function handleConfirmImport(incoming: GongyoPreset) {
-    importPreset(incoming);
+    const id = importPreset(incoming);
     onImportHandled?.();
-    setView({ name: "picker" });
+    handleStart(id);
   }
 
   function handleDeclineImport() {
@@ -264,7 +280,7 @@ export default function GongyoMode({
         onDuplicateEdit={handleDuplicateEdit}
         onEditUser={handleEditUser}
         onDeleteUser={handleDeleteUser}
-        onImportPreset={handleImportFromJson}
+        onImportPreset={handleImportFromPaste}
         onClose={() => setView({ name: "reciting" })}
       />
     );
@@ -279,14 +295,22 @@ export default function GongyoMode({
           .filter((title): title is string => Boolean(title)),
       ),
     );
+    const showIosNote = receivedInIosBrowser(
+      navigator.userAgent,
+      navigator.maxTouchPoints ?? 0,
+      isStandalonePwa(),
+    );
     return (
       <div className="preset-picker">
         <div className="preset-picker-header">
           <h2>差定を受け取りました</h2>
         </div>
+        {view.preset.from && (
+          <p className="preset-import-from">{view.preset.from} から届いた差定です</p>
+        )}
         <p className="preset-name">{view.preset.name}</p>
         <p className="preset-import-summary">
-          {includedUnitTitles.length}種類のunit・全{importPages.length}ページ
+          偈文{includedUnitTitles.length}種類・全{importPages.length}ページ
         </p>
         <ul className="preset-list">
           {includedUnitTitles.map((title) => (
@@ -297,12 +321,13 @@ export default function GongyoMode({
         </ul>
         <div className="preset-actions">
           <button type="button" className="preset-save" onClick={() => handleConfirmImport(view.preset)}>
-            追加する
+            追加して始める
           </button>
           <button type="button" className="gongyo-back" onClick={handleDeclineImport}>
             追加しない
           </button>
         </div>
+        {showIosNote && <IosInstallNote preset={view.preset} />}
       </div>
     );
   }
@@ -414,6 +439,7 @@ export default function GongyoMode({
             </div>
           </div>
         </div>
+        {preset.from && <p className="gongyo-intro-from">{preset.from}</p>}
         {gohogoIntroLabel && (
           <p className="gongyo-intro-gohogo">{gohogoIntroLabel}</p>
         )}
@@ -593,6 +619,48 @@ export default function GongyoMode({
           onClose={() => setShowOutline(false)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * iPhone・iPad のブラウザで受け取ったときの案内。
+ *
+ * iOS ではホーム画面に追加したアプリとブラウザで保存場所が分かれているため、
+ * ここで追加した差定はホーム画面のアプリには引き継がれない。アプリの
+ * 「差定を選ぶ」→「リンク・JSONから読み込む」に貼り付け直してもらう。
+ */
+function IosInstallNote({ preset }: { preset: GongyoPreset }) {
+  const [copied, setCopied] = useState(false);
+  const url = buildShareUrl(preset);
+
+  function copy() {
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        // 権限が無い等。リンクは下に表示してあるので長押しでコピーできる
+      });
+  }
+
+  return (
+    <div className="preset-ios-note">
+      <p>
+        {"ホーム画面に追加したアプリで使う場合は、この差定をアプリの側でもう一度"
+          + "読み込んでください(iPhoneでは、ブラウザとホーム画面のアプリで保存場所が別のため)。"}
+      </p>
+      <ol>
+        <li>下の「リンクをコピー」を押す</li>
+        <li>ホーム画面のアプリを開き、勤行の「差定を選ぶ」へ</li>
+        <li>「リンク・JSONから読み込む」に貼り付けて「読み込む」</li>
+      </ol>
+      <button type="button" onClick={copy}>
+        {copied ? "コピーしました" : "リンクをコピー"}
+      </button>
+      <p className="share-url">{url}</p>
     </div>
   );
 }

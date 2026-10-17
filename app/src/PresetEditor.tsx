@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GongyoPreset, GongyoUnit } from "./lib/gongyo";
 import { reorderItems, setItemCounter, toggleItemEnabled } from "./lib/userPresets";
+import { MAX_FROM_LENGTH, normalizeFrom } from "./lib/presetDistribution";
 
 interface PresetEditorProps {
   preset: GongyoPreset;
@@ -12,6 +13,7 @@ interface PresetEditorProps {
 export default function PresetEditor({ preset, unitsById, onSave, onCancel }: PresetEditorProps) {
   const [name, setName] = useState(preset.name);
   const [items, setItems] = useState(preset.items);
+  const [from, setFrom] = useState(preset.from ?? "");
 
   function move(index: number, direction: -1 | 1) {
     setItems((prev) => reorderItems(prev, index, index + direction));
@@ -33,7 +35,10 @@ export default function PresetEditor({ preset, unitsById, onSave, onCancel }: Pr
   }
 
   function handleSave() {
-    onSave({ ...preset, name, items });
+    const { from: _old, ...rest } = preset;
+    const normalized = normalizeFrom(from);
+    // 空なら項目ごと持たない(共有リンクを短く保つ)
+    onSave(normalized ? { ...rest, name, items, from: normalized } : { ...rest, name, items });
   }
 
   return (
@@ -51,6 +56,15 @@ export default function PresetEditor({ preset, unitsById, onSave, onCancel }: Pr
         value={name}
         onChange={(event) => setName(event.target.value)}
         aria-label="差定の名前"
+      />
+      <input
+        type="text"
+        className="preset-from-input"
+        value={from}
+        maxLength={MAX_FROM_LENGTH}
+        onChange={(event) => setFrom(event.target.value)}
+        placeholder="配布元(例: ◯◯寺) ※檀信徒に配る場合"
+        aria-label="配布元"
       />
 
       <ul className="preset-editor-list">

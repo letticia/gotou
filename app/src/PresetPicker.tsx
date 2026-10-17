@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import type { GongyoPreset } from "./lib/gongyo";
-import { buildShareUrl, isValidGongyoPreset } from "./lib/presetSharing";
+import { buildShareUrl } from "./lib/presetSharing";
+import { extractSharedPreset } from "./lib/presetDistribution";
 import { groupBuiltinPresets } from "./lib/presetGroups";
 
 interface PresetPickerProps {
@@ -35,19 +36,17 @@ export default function PresetPicker({
     }
   }
 
+  // 共有リンク(…#share=…)とJSONのどちらも受け付ける。iPhoneではブラウザで
+  // 受け取った差定がホーム画面のアプリに引き継がれないので、リンクを貼り直す経路になる
   function handleImport() {
-    try {
-      const parsed = JSON.parse(importText);
-      if (!isValidGongyoPreset(parsed)) {
-        setImportError("差定のJSONとして読み取れませんでした。");
-        return;
-      }
-      onImportPreset(parsed);
-      setImportText("");
-      setImportError(null);
-    } catch {
-      setImportError("JSONの形式が正しくありません。");
+    const result = extractSharedPreset(importText);
+    if (!result.preset) {
+      setImportError(result.error);
+      return;
     }
+    onImportPreset(result.preset);
+    setImportText("");
+    setImportError(null);
   }
 
   function renderPresetItem(preset: GongyoPreset, actions: React.ReactNode) {
@@ -150,7 +149,10 @@ export default function PresetPicker({
       {renderBuiltinSection("開発用", "動作確認用です(本番では表示されません)。", groups.dev)}
 
       <section className="preset-section">
-        <h3>JSONから読み込む</h3>
+        <h3>リンク・JSONから読み込む</h3>
+        <p className="preset-section-note">
+          お寺などから届いた差定のリンクやJSONを貼り付けてください。
+        </p>
         <textarea
           className="preset-import-textarea"
           value={importText}
@@ -158,7 +160,7 @@ export default function PresetPicker({
             setImportText(event.target.value);
             setImportError(null);
           }}
-          placeholder="共有されたJSONをここに貼り付け"
+          placeholder="共有されたリンクまたはJSONをここに貼り付け"
           rows={4}
         />
         {importError && <p className="preset-import-error">{importError}</p>}
@@ -194,6 +196,12 @@ function SharePanel({ preset, onClose }: SharePanelProps) {
 
   return (
     <div className="share-panel">
+      {!preset.from && (
+        <p className="share-hint">
+          {"お寺から配る場合は、編集で「配布元」にお寺の名前を入れておくと、"
+            + "受け取った方に表示されます。"}
+        </p>
+      )}
       <QRCodeSVG value={url} size={180} />
       <p className="share-url">{url}</p>
       <div className="share-actions">

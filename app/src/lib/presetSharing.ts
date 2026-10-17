@@ -32,6 +32,7 @@ export function isValidGongyoPreset(data: unknown): data is GongyoPreset {
     typeof preset.version === "number" &&
     typeof preset.id === "string" &&
     typeof preset.name === "string" &&
+    (preset.from === undefined || typeof preset.from === "string") &&
     Array.isArray(preset.items) &&
     preset.items.every(isGongyoPresetItem)
   );

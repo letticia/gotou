@@ -5,12 +5,15 @@ const LAST_PRESET_KEY = "gotou:last-preset-id";
 
 /** 雛形プリセットを複製し、ユーザー編集用の新しいプリセットを作る(元のitemsは変更しない) */
 export function duplicatePreset(source: GongyoPreset, newId: string, newName: string): GongyoPreset {
-  return {
+  const copy: GongyoPreset = {
     version: source.version,
     id: newId,
     name: newName,
     items: source.items.map((item) => ({ ...item })),
   };
+  // お寺から届いた差定を自分用に整えても、どこの差定かは残す
+  if (source.from) copy.from = source.from;
+  return copy;
 }
 
 /** items[fromIndex]をitems[toIndex]の位置に移動する(範囲外は元の配列をそのまま返す) */

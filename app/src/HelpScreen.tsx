@@ -196,9 +196,35 @@ export default function HelpScreen({ onClose }: HelpScreenProps) {
           </li>
           <li>
             {"「共有」からQRコードやURLで受け渡しできます。受け取った側は開くだけで"
-              + "取り込みの確認が出ます。"}
+              + "取り込みの確認が出ます。リンクやJSONを貼り付けて読み込むこともできます。"}
           </li>
         </ul>
+      </section>
+
+      <h3 className="settings-subhead">お寺から差定を配る</h3>
+      <section className="settings-group settings-textblock">
+        <ul className="settings-list">
+          <li>
+            {"雛形を「複製して編集」し、偈文を整えます。編集画面の「配布元」にお寺の名前を"
+              + "入れておくと、受け取った方に「◯◯寺 から届いた差定です」と表示され、"
+              + "扉の画面にもお寺の名前が出ます。"}
+          </li>
+          <li>
+            {"「共有」のQRコードを印刷して掲示したり、リンクをLINE等で送ったりします。"}
+          </li>
+          <li>
+            {"受け取った方は、QRを読むかリンクを開いて「追加して始める」を押すだけで、"
+              + "その差定の扉まで進みます。同じリンクを何度開いても、差定が重複して"
+              + "増えることはありません。"}
+          </li>
+        </ul>
+        <p className="settings-body-text">
+          {"iPhone・iPadの場合: カメラでQRを読むとブラウザ(Safari)で開きます。"
+            + "iPhoneではブラウザとホーム画面に追加したアプリで保存場所が別のため、"
+            + "ブラウザで受け取った差定はホーム画面のアプリには引き継がれません。"
+            + "受け取り画面に案内と「リンクをコピー」が出るので、ホーム画面のアプリの"
+            + "「差定を選ぶ」→「リンク・JSONから読み込む」に貼り付けてください。"}
+        </p>
       </section>
 
       <h3 className="settings-subhead">年回忌の早見表</h3>
